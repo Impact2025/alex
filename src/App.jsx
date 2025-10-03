@@ -51,7 +51,7 @@ const DribbelInputModal = ({ show, onClose, onSubmit, dareValue, onDareChange, t
 
 // === App 1: Ajax Sleep App (Standalone Version) ===
 
-const AjaxSleepApp = ({ onBack }) => {
+const AjaxSleepApp = ({ onBack, onLogout }) => {
   const [currentView, setCurrentView] = useState('home');
   const [parentMode, setParentMode] = useState(false);
   const [dailyGoals, setDailyGoals] = useState(0);
@@ -136,9 +136,9 @@ const AjaxSleepApp = ({ onBack }) => {
     <div className="bg-gradient-to-b from-red-700 to-red-900 min-h-screen text-white">
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
-           <button onClick={onBack} className="bg-white bg-opacity-20 p-2 rounded-full"><LogOut className="w-6 h-6" /></button>
+           <button onClick={onBack} className="bg-white bg-opacity-20 p-2 rounded-full"><Home className="w-6 h-6" /></button>
           <h1 className="text-2xl font-bold">Avondritueel</h1>
-          <button onClick={() => setParentMode(!parentMode)} className="bg-white bg-opacity-20 p-2 rounded-full"><Settings className="w-6 h-6" /></button>
+          <button onClick={onLogout} className="bg-white bg-opacity-20 p-2 rounded-full"><LogOut className="w-6 h-6" /></button>
         </div>
         <div className="text-center mb-8">
           <div className={`w-32 h-32 bg-gradient-to-br ${outfits[selectedOutfit].colors} rounded-full mx-auto mb-4 flex items-center justify-center relative border-4 border-white shadow-2xl`}>
@@ -266,23 +266,25 @@ const AjaxSleepApp = ({ onBack }) => {
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white overflow-hidden font-sans">
-      <RewardModal 
-        show={showReward} 
-        rewardType={rewardType} 
-        onClose={() => setShowReward(false)}
-        weeklyRewards={weeklyRewards}
-      />
-      <DribbelInputModal 
-        show={showDribbelInput}
-        onClose={() => setShowDribbelInput(false)}
-        onSubmit={handleDribbelSubmit}
-        dareValue={dribbelDare}
-        onDareChange={(e) => setDribbelDare(e.target.value)}
-        tryValue={dribbelTry}
-        onTryChange={(e) => setDribbelTry(e.target.value)}
-      />
-      {renderContent()}
+    <div className="min-h-screen bg-gray-900 md:flex md:items-center md:justify-center">
+      <div className="w-full md:max-w-md bg-white overflow-hidden font-sans md:shadow-2xl min-h-screen md:min-h-0">
+        <RewardModal
+          show={showReward}
+          rewardType={rewardType}
+          onClose={() => setShowReward(false)}
+          weeklyRewards={weeklyRewards}
+        />
+        <DribbelInputModal
+          show={showDribbelInput}
+          onClose={() => setShowDribbelInput(false)}
+          onSubmit={handleDribbelSubmit}
+          dareValue={dribbelDare}
+          onDareChange={(e) => setDribbelDare(e.target.value)}
+          tryValue={dribbelTry}
+          onTryChange={(e) => setDribbelTry(e.target.value)}
+        />
+        {renderContent()}
+      </div>
     </div>
   );
 };
@@ -326,7 +328,7 @@ const PrimaryButton = ({ onClick, children, disabled=false }) => (
 );
 
 // Tool Screens
-const ToolboxScreen = ({ onSelectTool, onBack }) => {
+const ToolboxScreen = ({ onSelectTool, onBack, onLogout }) => {
     const tools = [
         { id: 'match_ritual', icon: ClipboardList, title: "Wedstrijd Ritueel"},
         { id: 'morning', icon: Sun, title: "Ochtend Intentie" },
@@ -340,8 +342,9 @@ const ToolboxScreen = ({ onSelectTool, onBack }) => {
     return (
         <div className="p-4 bg-gray-100 min-h-screen">
              <div className="flex justify-between items-center mb-6 px-2">
+                <button onClick={onBack} className="p-2 rounded-full bg-white shadow-md"><Home className="text-red-600"/></button>
                 <h1 className="text-3xl font-bold">Toolbox 🧰</h1>
-                <button onClick={onBack} className="p-2 rounded-full bg-white shadow-md"><LogOut className="text-red-600"/></button>
+                <button onClick={onLogout} className="p-2 rounded-full bg-white shadow-md"><LogOut className="text-red-600"/></button>
             </div>
             <div className="grid grid-cols-2 gap-4">
                 {tools.map((tool, index) => (
@@ -556,7 +559,7 @@ const MatchRitualScreen = ({ onBack, onSave, savedData }) => {
 
 
 // Wellness App Main Component
-const WellnessApp = ({ onBack, initialView = 'toolbox' }) => {
+const WellnessApp = ({ onBack, onLogout, initialView = 'toolbox' }) => {
   const [currentView, setCurrentView] = useState(initialView);
   const [dailyData, setDailyData] = useState({});
   const getTodayDateString = () => new Date().toISOString().split('T')[0];
@@ -584,28 +587,30 @@ const WellnessApp = ({ onBack, initialView = 'toolbox' }) => {
       case 'gratitude': return <GratitudeScreen onBack={() => setCurrentView('toolbox')} onSave={(data) => handleToolCompletion('gratitude', data)} savedGratitude={todayData.gratitude} />;
       case 'breathing': return <BreathingScreen onBack={() => setCurrentView('toolbox')} />;
       case 'full_checkin': return <FullCheckinScreen onBack={() => setCurrentView('toolbox')} onComplete={(data) => handleToolCompletion('full_checkin', data)} />;
-      case 'evening': return <AjaxSleepApp onBack={() => setCurrentView('toolbox')} />;
+      case 'evening': return <AjaxSleepApp onBack={() => setCurrentView('toolbox')} onLogout={onLogout} />;
       case 'match_ritual': return <MatchRitualScreen onBack={() => setCurrentView('toolbox')} onSave={(data) => handleToolCompletion('match_ritual', data)} savedData={todayData.match_ritual} />;
       case 'toolbox':
       default:
-        return <ToolboxScreen onSelectTool={setCurrentView} onBack={onBack} />;
+        return <ToolboxScreen onSelectTool={setCurrentView} onBack={onBack} onLogout={onLogout} />;
     }
   };
   
   return (
-    <div className="max-w-md mx-auto bg-white shadow-2xl font-sans h-screen">
-       <style>{`
-          .range-thumb::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 24px;
-            height: 24px;
-            background: #DA291C;
-            border-radius: 50%;
-            cursor: pointer;
-          }
-        `}</style>
-        {renderContent()}
+    <div className="min-h-screen bg-gray-900 md:flex md:items-center md:justify-center">
+      <div className="w-full md:max-w-md bg-white md:shadow-2xl font-sans min-h-screen md:min-h-0">
+         <style>{`
+            .range-thumb::-webkit-slider-thumb {
+              -webkit-appearance: none;
+              appearance: none;
+              width: 24px;
+              height: 24px;
+              background: #DA291C;
+              border-radius: 50%;
+              cursor: pointer;
+            }
+          `}</style>
+          {renderContent()}
+      </div>
     </div>
   );
 };
@@ -668,11 +673,11 @@ const App = () => {
     }
 
     if (activeApp === 'sleep') {
-        return <AjaxSleepApp onBack={() => setActiveApp(null)} />;
+        return <AjaxSleepApp onBack={() => setActiveApp(null)} onLogout={handleLogout} />;
     }
 
     if (activeApp === 'wellness') {
-        return <WellnessApp onBack={() => setActiveApp(null)} initialView={initialWellnessView} />;
+        return <WellnessApp onBack={() => setActiveApp(null)} onLogout={handleLogout} initialView={initialWellnessView} />;
     }
 
     return (
