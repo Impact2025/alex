@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ShieldCheck, Sun, Zap, Brain, Star, Wind, Moon, BarChart3, CheckCircle, Circle, Play, Pause, Award, Target, Home, Calendar, Volume2, Settings, ArrowRight, ArrowLeft, Plus, Trash2, User, Trophy, BarChart2, BookOpen, LogOut, Lightbulb, ThumbsUp, BrainCircuit, Pin, FileText, ArrowUpRight, ClipboardList } from 'lucide-react';
 import LoginScreen from './LoginScreen';
+import { supabase } from './supabaseClient';
 
 // === MODAL COMPONENTS ===
 const RewardModal = ({ show, rewardType, onClose, weeklyRewards }) => {
@@ -612,19 +613,33 @@ const WellnessApp = ({ onBack, initialView = 'toolbox' }) => {
 
 // === MAIN APP SWITCHER ===
 const App = () => {
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [username, setUsername] = useState('');
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [activeApp, setActiveApp] = useState(null);
     const [initialWellnessView, setInitialWellnessView] = useState('toolbox');
 
-    const handleLogin = (user) => {
-        setUsername(user);
-        setIsLoggedIn(true);
+    useEffect(() => {
+        // Check active sessions and sets the user
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setUser(session?.user ?? null);
+            setLoading(false);
+        });
+
+        // Listen for changes on auth state (login, logout, etc.)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
+
+    const handleLogin = (loggedInUser) => {
+        setUser(loggedInUser);
     };
 
-    const handleLogout = () => {
-        setIsLoggedIn(false);
-        setUsername('');
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        setUser(null);
         setActiveApp(null);
     };
 
@@ -637,7 +652,18 @@ const App = () => {
         }
     };
 
-    if (!isLoggedIn) {
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-800 flex items-center justify-center text-white">
+                <div className="text-center">
+                    <h1 className="text-4xl font-bold mb-4">AJAX</h1>
+                    <p>Laden...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!user) {
         return <LoginScreen onLogin={handleLogin} />;
     }
 
@@ -654,7 +680,7 @@ const App = () => {
             <div className="absolute top-4 right-4">
                 <button onClick={handleLogout} className="flex items-center space-x-2 bg-white bg-opacity-20 px-4 py-2 rounded-full hover:bg-opacity-30 transition-colors">
                     <User size={20} />
-                    <span>{username}</span>
+                    <span>{user.email}</span>
                     <LogOut size={20} />
                 </button>
             </div>
