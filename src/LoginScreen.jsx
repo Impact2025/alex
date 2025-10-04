@@ -122,16 +122,30 @@ const LoginScreen = ({ onLogin }) => {
       const { data, error } = await supabase.auth.signUp({
         email: email,
         password: pwd,
+        options: {
+          emailRedirectTo: window.location.origin,
+        }
       });
 
       if (error) throw error;
 
       if (data.user) {
-        setError('');
-        alert('Account aangemaakt! Log nu in met je gegevens.');
-        setIsRegistering(false);
-        setPincode('');
-        setPassword('');
+        // Check if email confirmation is required
+        if (data.user.confirmed_at) {
+          // User is already confirmed, can login immediately
+          setError('');
+          alert('Account aangemaakt! Log nu in met je gegevens.');
+          setIsRegistering(false);
+          setPincode('');
+          setPassword('');
+        } else {
+          // Email confirmation required
+          setError('');
+          alert('Account aangemaakt! Check je email voor de bevestigingslink, of probeer direct in te loggen als email verificatie uit staat.');
+          setIsRegistering(false);
+          setPincode('');
+          setPassword('');
+        }
       }
     } catch (error) {
       setError(error.message || 'Registratie mislukt.');
