@@ -707,6 +707,25 @@ const App = () => {
     const [activeApp, setActiveApp] = useState(null);
     const [initialWellnessView, setInitialWellnessView] = useState('toolbox');
 
+    // Inspirational football quotes
+    const footballQuotes = [
+        { player: "Johan Cruijff", quote: "Voetbal speel je met je hoofd, je voeten zijn alleen maar de hulpmiddelen.", lesson: "Slim denken is sterker dan hard rennen." },
+        { player: "Xavi (Barcelona)", quote: "Snel denken is belangrijker dan snel lopen.", lesson: "Je hersenen zijn je superkracht." },
+        { player: "Andrea Pirlo", quote: "Rust aan de bal is sterker dan paniekvoetbal.", lesson: "Kalm blijven is vaak de beste truc." },
+        { player: "Lionel Messi", quote: "Je moet blijven vechten voor je droom, ook als het moeilijk is.", lesson: "Opgeven is nooit een optie." },
+        { player: "Arjen Robben", quote: "Je moet altijd blijven gaan, ook al val je 100 keer.", lesson: "Fouten maken mag, zolang je maar weer opstaat." },
+        { player: "Cristiano Ronaldo", quote: "Talent zonder hard werken is niets waard.", lesson: "Slim zijn helpt, maar oefenen maakt je echt goed." },
+        { player: "Zlatan Ibrahimović", quote: "Je hoeft niet te doen wat iedereen doet. Doe het op jouw manier.", lesson: "Durf anders te zijn." },
+        { player: "George Best", quote: "Probeer het gewoon, anders weet je nooit wat er had kunnen gebeuren.", lesson: "Het is beter iets te proberen dan spijt te hebben." },
+        { player: "Diego Simeone", quote: "Inzet is niet te onderhandelen.", lesson: "Je moet altijd je best doen, of je nou wint of verliest." },
+        { player: "Johan Cruijff", quote: "Elk nadeel heeft z'n voordeel.", lesson: "Ook als het tegenzit, zit er altijd iets goeds in." }
+    ];
+
+    const [dailyQuote] = useState(() => {
+        const randomIndex = Math.floor(Math.random() * footballQuotes.length);
+        return footballQuotes[randomIndex];
+    });
+
     useEffect(() => {
         // Check active sessions and sets the user
         supabase.auth.getSession().then(({ data: { session } }) => {
@@ -774,7 +793,17 @@ const App = () => {
                 </button>
             </div>
             <h1 className="text-4xl font-bold mb-2">AJAX</h1>
-            <p className="text-lg text-gray-300 mb-12">Performance Suite</p>
+
+            {/* Inspirational Quote */}
+            <div className="w-full max-w-md bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl p-6 mb-8 border-2 border-white border-opacity-20">
+                <p className="text-xs font-semibold mb-2 opacity-75">⚽ {dailyQuote.player}</p>
+                <p className="text-base italic font-medium mb-3">"{dailyQuote.quote}"</p>
+                <div className="flex items-start space-x-2 bg-white bg-opacity-10 rounded-lg p-3">
+                    <span className="text-lg">👉</span>
+                    <p className="text-sm font-semibold">{dailyQuote.lesson}</p>
+                </div>
+            </div>
+
             <div className="w-full max-w-sm space-y-4">
                 <button onClick={() => handleSelect('sleep')} className="w-full bg-white p-5 rounded-xl text-left flex items-center transition-transform hover:scale-105 shadow-lg">
                     <div className="w-1.5 h-12 bg-red-600 rounded-full mr-4"></div>
