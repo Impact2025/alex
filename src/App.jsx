@@ -414,7 +414,27 @@ const PrimaryButton = ({ onClick, children, disabled=false }) => (
 
 // Tool Screens
 const ToolboxScreen = ({ onSelectTool, onBack, onLogout }) => {
+    const { totalPoints, currentLevel } = usePoints();
     const isMatchDay = new Date().getDay() === 6;
+
+    // Football quotes
+    const footballQuotes = [
+        { player: "Johan Cruijff", quote: "Voetbal speel je met je hoofd, je voeten zijn alleen maar de hulpmiddelen.", lesson: "Slim denken is sterker dan hard rennen." },
+        { player: "Xavi (Barcelona)", quote: "Snel denken is belangrijker dan snel lopen.", lesson: "Je hersenen zijn je superkracht." },
+        { player: "Andrea Pirlo", quote: "Rust aan de bal is sterker dan paniekvoetbal.", lesson: "Kalm blijven is vaak de beste truc." },
+        { player: "Lionel Messi", quote: "Je moet blijven vechten voor je droom, ook als het moeilijk is.", lesson: "Opgeven is nooit een optie." },
+        { player: "Arjen Robben", quote: "Je moet altijd blijven gaan, ook al val je 100 keer.", lesson: "Fouten maken mag, zolang je maar weer opstaat." },
+        { player: "Cristiano Ronaldo", quote: "Talent zonder hard werken is niets waard.", lesson: "Slim zijn helpt, maar oefenen maakt je echt goed." },
+        { player: "Zlatan Ibrahimović", quote: "Je hoeft niet te doen wat iedereen doet. Doe het op jouw manier.", lesson: "Durf anders te zijn." },
+        { player: "George Best", quote: "Probeer het gewoon, anders weet je nooit wat er had kunnen gebeuren.", lesson: "Het is beter iets te proberen dan spijt te hebben." },
+        { player: "Diego Simeone", quote: "Inzet is niet te onderhandelen.", lesson: "Je moet altijd je best doen, of je nou wint of verliest." },
+        { player: "Johan Cruijff", quote: "Elk nadeel heeft z'n voordeel.", lesson: "Ook als het tegenzit, zit er altijd iets goeds in." }
+    ];
+
+    const [dailyQuote] = useState(() => {
+        const randomIndex = Math.floor(Math.random() * footballQuotes.length);
+        return footballQuotes[randomIndex];
+    });
 
     const tools = [
         { id: 'morning', icon: Sun, title: "Ochtend Intentie" },
@@ -429,10 +449,41 @@ const ToolboxScreen = ({ onSelectTool, onBack, onLogout }) => {
 
     return (
         <div className="p-4 bg-gray-100 min-h-screen">
-             <div className="flex justify-between items-center mb-6 px-2">
-                <button onClick={onBack} className="p-2 rounded-full bg-white shadow-md"><Home className="text-red-600"/></button>
-                <h1 className="text-3xl font-bold">Toolbox 🧰</h1>
+             <div className="flex justify-between items-center mb-4 px-2">
                 <button onClick={onLogout} className="p-2 rounded-full bg-white shadow-md"><LogOut className="text-red-600"/></button>
+                <h1 className="text-3xl font-bold">AJAX 🧰</h1>
+                <div className="w-10"></div>
+            </div>
+
+            {/* Points & Level Card - Clickable */}
+            <button
+                onClick={() => onSelectTool('points')}
+                className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white rounded-2xl p-4 mb-4 shadow-lg hover:shadow-xl transition-all active:scale-95"
+            >
+                <div className="flex items-center justify-between">
+                    <div className="text-left">
+                        <p className="text-sm opacity-90">Jouw Level</p>
+                        <h2 className="text-2xl font-bold">{currentLevel.name}</h2>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-4xl font-black">{currentLevel.badge}</p>
+                        <p className="text-sm opacity-90 mt-1">{totalPoints} punten</p>
+                    </div>
+                </div>
+                <div className="mt-2 flex items-center justify-center space-x-1 text-xs opacity-75">
+                    <Trophy size={14} />
+                    <span>Tap voor meer details</span>
+                </div>
+            </button>
+
+            {/* Daily Quote */}
+            <div className="bg-white rounded-2xl p-4 mb-4 shadow-md">
+                <p className="text-xs font-semibold mb-2 text-gray-600">⚽ {dailyQuote.player}</p>
+                <p className="text-sm italic font-medium mb-2 text-gray-800">"{dailyQuote.quote}"</p>
+                <div className="flex items-start space-x-2 bg-gray-50 rounded-lg p-3">
+                    <span className="text-base">👉</span>
+                    <p className="text-xs font-semibold text-gray-700">{dailyQuote.lesson}</p>
+                </div>
             </div>
 
             {/* Match Day Special Button */}
@@ -817,6 +868,7 @@ const WellnessAppContent = ({ onBack, onLogout, initialView = 'toolbox' }) => {
     const todayData = dailyData[today] || {};
 
     switch (currentView) {
+      case 'points': return <PointsDashboard onBack={() => setCurrentView('toolbox')} />;
       case 'match_day': return <MatchDay onBack={() => setCurrentView('toolbox')} />;
       case 'morning': return <MorningCheckinScreen onBack={() => setCurrentView('toolbox')} onComplete={(data) => handleToolCompletion('morning', data)} />;
       case 'challenge': return <ChallengeScreen onBack={() => setCurrentView('toolbox')} onComplete={() => handleToolCompletion('challenge', true)} isCompleted={!!todayData.challenge} />;
