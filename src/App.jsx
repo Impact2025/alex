@@ -91,13 +91,13 @@ const AjaxSleepAppContent = ({ onBack, onLogout }) => {
   });
   
   const defaultMissions = [
-    { id: 1, name: 'Kick-off Maaltijd', time: '18:00', goals: 0, icon: '🍽️', description: 'Eet samen en zeg waar je trots op bent.' },
-    { id: 2, name: 'Chillen', time: '18:15', goals: 3, icon: '😎', description: 'Even relaxen als een echte Ajax-ster.' },
-    { id: 3, name: 'Warming-up Johan Cruijff', time: '18:45', goals: 2, icon: '📺', description: 'Kijk Klokhuis (max. 15 min) + 10 push-ups.' },
-    { id: 4, name: 'Fris-op Vrije Trap', time: '19:15', goals: 1, icon: '🚿', description: 'Douchen/wassen, tanden poetsen, pyjama aan.' },
-    { id: 5, name: 'Pyjama-Dribbel', time: '19:30', goals: 1, icon: '✎', description: 'Schrijf: "Vandaag durfde ik..." & "Morgen ga ik proberen..."' },
-    { id: 6, name: 'Bonuslevel voor Kampioenen', time: '19:40', goals: 0.5, icon: '⚡', description: 'Kies 1: Puzzel, creatieve opdracht, of coachvraag.' },
-    { id: 7, name: 'Finale Fluitsignaal', time: '20:00', goals: 2, icon: '🌙', description: 'Ogen dicht, glimlach en droom over...' }
+    { id: 1, name: 'Kick-off Maaltijd', time: '18:00', goals: 0, points: 10, icon: '🍽️', description: 'Eet samen en zeg waar je trots op bent.' },
+    { id: 2, name: 'Chillen', time: '18:15', goals: 3, points: 30, icon: '😎', description: 'Even relaxen als een echte Ajax-ster.' },
+    { id: 3, name: 'Warming-up Johan Cruijff', time: '18:45', goals: 2, points: 20, icon: '📺', description: 'Kijk Klokhuis (max. 15 min) + 10 push-ups.' },
+    { id: 4, name: 'Fris-op Vrije Trap', time: '19:15', goals: 1, points: 15, icon: '🚿', description: 'Douchen/wassen, tanden poetsen, pyjama aan.' },
+    { id: 5, name: 'Pyjama-Dribbel', time: '19:30', goals: 1, points: 15, icon: '✎', description: 'Schrijf: "Vandaag durfde ik..." & "Morgen ga ik proberen..."' },
+    { id: 6, name: 'Bonuslevel voor Kampioenen', time: '19:40', goals: 0.5, points: 10, icon: '⚡', description: 'Kies 1: Puzzel, creatieve opdracht, of coachvraag.' },
+    { id: 7, name: 'Finale Fluitsignaal', time: '20:00', goals: 2, points: 20, icon: '🌙', description: 'Ogen dicht, glimlach en droom over...' }
   ];
 
   const weeklyRewards = {
@@ -134,6 +134,17 @@ const AjaxSleepAppContent = ({ onBack, onLogout }) => {
       setWeeklyGoals(newWeeklyTotal);
       playSound('goal');
 
+      // Add points for completing mission
+      if (mission.points) {
+        points.addPoints(mission.points, mission.name);
+      }
+
+      // Check for early bird achievement
+      const currentHour = new Date().getHours();
+      if (missionId === 7 && currentHour < 20) {
+        points.trackActivity('early_bird');
+      }
+
       for (const [key, reward] of Object.entries(weeklyRewards)) {
           if (newWeeklyTotal >= reward.threshold && weeklyGoals < reward.threshold) {
               setRewardType(key);
@@ -156,10 +167,32 @@ const AjaxSleepAppContent = ({ onBack, onLogout }) => {
     const HomeScreen = () => (
     <div className="bg-gradient-to-b from-red-700 to-red-900 min-h-screen text-white">
       <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-4">
            <button onClick={onBack} className="bg-white bg-opacity-20 p-2 rounded-full"><Home className="w-6 h-6" /></button>
           <h1 className="text-2xl font-bold">Avondritueel</h1>
           <button onClick={onLogout} className="bg-white bg-opacity-20 p-2 rounded-full"><LogOut className="w-6 h-6" /></button>
+        </div>
+
+        {/* Points & Level Display */}
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setCurrentView('points')}
+            className="flex-1 bg-white bg-opacity-10 rounded-xl p-3 flex items-center justify-between hover:bg-opacity-20 transition-colors"
+          >
+            <div className="flex items-center space-x-2">
+              <div className={`text-2xl bg-gradient-to-br ${points.currentLevel.color} w-10 h-10 rounded-full flex items-center justify-center`}>
+                {points.currentLevel.badge}
+              </div>
+              <div className="text-left">
+                <p className="text-xs opacity-75">Level {points.currentLevel.id}</p>
+                <p className="font-bold text-sm">{points.currentLevel.name}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-xs opacity-75">Punten</p>
+              <p className="font-bold text-lg">{points.totalPoints}</p>
+            </div>
+          </button>
         </div>
 
         {/* Johan Cruijff Quote */}
@@ -213,6 +246,12 @@ const AjaxSleepAppContent = ({ onBack, onLogout }) => {
                         <p className={`text-xs font-semibold ${completedMissions[mission.id] ? 'text-white' : 'text-gray-500'}`}>{mission.time}</p>
                     </div>
                     <p className={`text-sm ${completedMissions[mission.id] ? 'opacity-90' : 'text-gray-600'}`}>{mission.description}</p>
+                    {mission.points && (
+                      <div className={`inline-flex items-center space-x-1 mt-1 px-2 py-1 rounded-full text-xs font-bold ${completedMissions[mission.id] ? 'bg-white bg-opacity-20 text-white' : 'bg-green-100 text-green-700'}`}>
+                        <Star className="w-3 h-3" fill={completedMissions[mission.id] ? 'white' : 'currentColor'} />
+                        <span>{mission.points} punten</span>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <button 
@@ -288,6 +327,7 @@ const AjaxSleepAppContent = ({ onBack, onLogout }) => {
       case 'missions': return <MissionsScreen />;
       case 'scorecard': return <ScorecardScreen />;
       case 'badges': return <BadgesScreen />;
+      case 'points': return <PointsDashboard onBack={() => setCurrentView('home')} />;
       default: return <HomeScreen />;
     }
   };
@@ -310,11 +350,28 @@ const AjaxSleepAppContent = ({ onBack, onLogout }) => {
           tryValue={dribbelTry}
           onTryChange={(e) => setDribbelTry(e.target.value)}
         />
+        <LevelUpModal
+          show={points.showLevelUp}
+          level={points.newLevel}
+          onClose={() => points.setShowLevelUp(false)}
+        />
+        <AchievementModal
+          show={points.showAchievement !== null}
+          achievement={points.showAchievement}
+          onClose={() => points.setShowAchievement(null)}
+        />
         {renderContent()}
       </div>
     </div>
   );
 };
+
+// Wrapper component with PointsProvider
+const AjaxSleepApp = (props) => (
+  <PointsProvider>
+    <AjaxSleepAppContent {...props} />
+  </PointsProvider>
+);
 
 
 // === App 2: Ajax Wellness Toolbox ===
