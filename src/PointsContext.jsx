@@ -26,6 +26,10 @@ const ACHIEVEMENTS = {
   cruijff_fan: { id: 'cruijff_fan', name: 'Cruijff Fan', description: 'Alle quotes gelezen', icon: '💬', points: 30, target: 8 },
   reflection_master: { id: 'reflection_master', name: 'Reflectie Meester', description: '10x wedstrijd ritueel', icon: '🎯', points: 100, target: 10 },
   zen_master: { id: 'zen_master', name: 'Zen Master', description: '20x ademhalings-oefening', icon: '🧘', points: 75, target: 20 },
+  match_day_hero: { id: 'match_day_hero', name: 'Wedstrijddag Held', description: 'Voltooi 5x wedstrijddag rituelen', icon: '⚽', points: 150, target: 5 },
+  perfect_prep: { id: 'perfect_prep', name: 'Perfecte Voorbereiding', description: 'Alle pre-match rituelen 1x', icon: '🏆', points: 200, target: 1 },
+  daily_warrior: { id: 'daily_warrior', name: 'Dagelijkse Strijder', description: 'Gebruik app 10 dagen op rij', icon: '💪', points: 100, target: 10 },
+  toolbox_master: { id: 'toolbox_master', name: 'Toolbox Master', description: '25x wellness tools gebruikt', icon: '🛠️', points: 125, target: 25 },
   streak_3: { id: 'streak_3', name: 'Warme Start', description: '3 dagen streak', icon: '🔥', points: 25, target: 3 },
   streak_7: { id: 'streak_7', name: 'Week Kampioen', description: '7 dagen streak', icon: '⭐', points: 75, target: 7 },
   streak_14: { id: 'streak_14', name: 'Twee Weken Koning', description: '14 dagen streak', icon: '💎', points: 150, target: 14 },
@@ -42,6 +46,8 @@ export const PointsProvider = ({ children }) => {
     quotes_read: 0,
     match_rituals: 0,
     breathing_sessions: 0,
+    toolbox_uses: 0,
+    perfect_preps: 0,
   });
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [showAchievement, setShowAchievement] = useState(null);
@@ -61,6 +67,8 @@ export const PointsProvider = ({ children }) => {
         quotes_read: 0,
         match_rituals: 0,
         breathing_sessions: 0,
+        toolbox_uses: 0,
+        perfect_preps: 0,
       });
     }
   }, []);
@@ -124,6 +132,10 @@ export const PointsProvider = ({ children }) => {
           if (achievement.id === 'cruijff_fan' && newCounts.quotes_read >= achievement.target) shouldUnlock = true;
           if (achievement.id === 'reflection_master' && newCounts.match_rituals >= achievement.target) shouldUnlock = true;
           if (achievement.id === 'zen_master' && newCounts.breathing_sessions >= achievement.target) shouldUnlock = true;
+          if (achievement.id === 'match_day_hero' && newCounts.match_rituals >= achievement.target) shouldUnlock = true;
+          if (achievement.id === 'perfect_prep' && newCounts.perfect_preps >= achievement.target) shouldUnlock = true;
+          if (achievement.id === 'toolbox_master' && newCounts.toolbox_uses >= achievement.target) shouldUnlock = true;
+          if (achievement.id === 'daily_warrior' && currentStreak >= achievement.target) shouldUnlock = true;
           if (achievement.id.startsWith('streak_') && currentStreak >= achievement.target) shouldUnlock = true;
 
           if (shouldUnlock) {

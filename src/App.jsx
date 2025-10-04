@@ -5,6 +5,7 @@ import { supabase } from './supabaseClient';
 import { PointsProvider, usePoints } from './PointsContext';
 import { LevelUpModal, AchievementModal } from './components/AchievementModals';
 import PointsDashboard from './components/PointsDashboard';
+import MatchDay from './components/MatchDay';
 
 // === MODAL COMPONENTS ===
 const RewardModal = ({ show, rewardType, onClose, weeklyRewards }) => {
@@ -413,16 +414,19 @@ const PrimaryButton = ({ onClick, children, disabled=false }) => (
 
 // Tool Screens
 const ToolboxScreen = ({ onSelectTool, onBack, onLogout }) => {
+    const isMatchDay = new Date().getDay() === 6;
+
     const tools = [
-        { id: 'match_ritual', icon: ClipboardList, title: "Wedstrijd Ritueel"},
         { id: 'morning', icon: Sun, title: "Ochtend Intentie" },
         { id: 'challenge', icon: Zap, title: "Dagelijkse Uitdaging" },
         { id: 'thoughts', icon: Brain, title: "Gedachten Dump" },
         { id: 'gratitude', icon: Star, title: "Dankbaarheid" },
         { id: 'breathing', icon: Wind, title: "Adem Coach" },
         { id: 'full_checkin', icon: BarChart3, title: "Volledige Check-in" },
+        { id: 'match_ritual', icon: ClipboardList, title: "Wedstrijd Ritueel"},
         { id: 'evening', icon: Moon, title: "Avond Routine" },
     ];
+
     return (
         <div className="p-4 bg-gray-100 min-h-screen">
              <div className="flex justify-between items-center mb-6 px-2">
@@ -430,13 +434,52 @@ const ToolboxScreen = ({ onSelectTool, onBack, onLogout }) => {
                 <h1 className="text-3xl font-bold">Toolbox 🧰</h1>
                 <button onClick={onLogout} className="p-2 rounded-full bg-white shadow-md"><LogOut className="text-red-600"/></button>
             </div>
+
+            {/* Match Day Special Button */}
+            <button
+                onClick={() => onSelectTool('match_day')}
+                className={`w-full mb-4 p-6 rounded-3xl font-bold flex items-center justify-between shadow-xl transition-all ${
+                    isMatchDay
+                        ? 'bg-gradient-to-r from-red-600 to-red-800 text-white animate-pulse'
+                        : 'bg-gradient-to-r from-gray-500 to-gray-700 text-white'
+                }`}
+            >
+                <div className="flex items-center gap-4">
+                    <div className="text-5xl">⚽</div>
+                    <div className="text-left">
+                        <div className="text-2xl font-black">
+                            {isMatchDay ? 'WEDSTRIJDDAG!' : 'Wedstrijddag'}
+                        </div>
+                        <div className="text-sm opacity-90">
+                            {isMatchDay ? '🔥 ALLE PUNTEN 2X VANDAAG!' : 'Alleen op zaterdag'}
+                        </div>
+                    </div>
+                </div>
+                <div className="text-4xl">{isMatchDay ? '🏆' : '📅'}</div>
+            </button>
+
+            {isMatchDay && (
+                <div className="bg-yellow-100 border-2 border-yellow-400 rounded-2xl p-4 mb-4 text-center">
+                    <p className="text-yellow-900 font-bold text-lg">🎯 BONUS ALERT!</p>
+                    <p className="text-yellow-800 text-sm mt-1">Alle tools geven vandaag DUBBELE punten! 2️⃣✖️</p>
+                </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
                 {tools.map((tool, index) => (
-                    <button 
-                        key={tool.id} 
-                        onClick={() => onSelectTool(tool.id)} 
-                        className={`p-4 rounded-2xl font-bold flex flex-col items-center justify-center aspect-square shadow-md hover:scale-105 transition-transform ${tool.id === 'match_ritual' ? 'col-span-2 bg-red-700 text-white' : index % 3 === 0 ? 'bg-red-600 text-white' : 'bg-white text-gray-800'}`}>
-                        <tool.icon size={32} className={`mb-2 ${tool.id === 'match_ritual' || index % 3 === 0 ? 'text-white' : 'text-red-600'}`} />
+                    <button
+                        key={tool.id}
+                        onClick={() => onSelectTool(tool.id)}
+                        className={`p-4 rounded-2xl font-bold flex flex-col items-center justify-center aspect-square shadow-md hover:scale-105 transition-transform relative ${
+                            index % 3 === 0 ? 'bg-red-600 text-white' : 'bg-white text-gray-800'
+                        }`}
+                    >
+                        {isMatchDay && (
+                            <div className="absolute top-1 right-1 bg-yellow-400 text-yellow-900 text-xs px-2 py-1 rounded-full font-black">
+                                2x
+                            </div>
+                        )}
+                        <tool.icon size={32} className={`mb-2 ${index % 3 === 0 ? 'text-white' : 'text-red-600'}`} />
                         <span className="text-center text-sm">{tool.title}</span>
                     </button>
                 ))}
@@ -445,70 +488,158 @@ const ToolboxScreen = ({ onSelectTool, onBack, onLogout }) => {
     );
 };
 const MorningCheckinScreen = ({ onBack, onComplete }) => {
+    const { addPoints, trackActivity } = usePoints();
     const [sleep, setSleep] = useState(5);
     const [goal, setGoal] = useState('');
+
+    const handleComplete = () => {
+        const isMatchDay = new Date().getDay() === 6;
+        const basePoints = 20;
+        const points = isMatchDay ? basePoints * 2 : basePoints;
+
+        addPoints(points, `Ochtend Intentie${isMatchDay ? ' (Wedstrijddag 2x!)' : ''}`);
+        trackActivity('toolbox_uses');
+        onComplete({sleep, goal});
+    };
+
     return (
         <div className="flex flex-col h-full bg-gray-50">
             <ToolHeader title="Ochtend Intentie" onBack={onBack} />
             <div className="p-4 flex-grow">
+                <div className="bg-green-100 border-2 border-green-400 rounded-xl p-3 mb-4 text-center">
+                    <p className="text-green-800 font-bold">+{new Date().getDay() === 6 ? '40' : '20'} punten! {new Date().getDay() === 6 ? '🔥 2x Wedstrijddag!' : '⭐'}</p>
+                </div>
                 <SliderInput label="Hoe heb je geslapen?" minLabel="Slecht" maxLabel="Heel goed" value={sleep} onChange={(e) => setSleep(e.target.value)} />
                 <TextAreaInput label="Wat is je doel voor vandaag?" placeholder="Eén klein ding..." value={goal} onChange={(e) => setGoal(e.target.value)} />
             </div>
-            <PrimaryButton onClick={() => onComplete({sleep, goal})}>Start de Dag!</PrimaryButton>
+            <PrimaryButton onClick={handleComplete}>Start de Dag!</PrimaryButton>
         </div>
     );
 };
 const todayChallenge = "Drink vandaag 8 glazen water.";
-const ChallengeScreen = ({ onBack, onComplete, isCompleted }) => (
-    <div className="flex flex-col h-full bg-gray-50">
-        <ToolHeader title="Dagelijkse Uitdaging" onBack={onBack} />
-        <div className="p-6 text-center flex-grow flex flex-col items-center justify-center">
-            <div className={`p-8 rounded-full mb-6 ${isCompleted ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                {isCompleted ? <CheckCircle size={48}/> : <Zap size={48} />}
+const ChallengeScreen = ({ onBack, onComplete, isCompleted }) => {
+    const { addPoints, trackActivity } = usePoints();
+
+    const handleComplete = () => {
+        if (!isCompleted) {
+            const isMatchDay = new Date().getDay() === 6;
+            const basePoints = 25;
+            const points = isMatchDay ? basePoints * 2 : basePoints;
+
+            addPoints(points, `Dagelijkse Uitdaging${isMatchDay ? ' (Wedstrijddag 2x!)' : ''}`);
+            trackActivity('toolbox_uses');
+            onComplete();
+        }
+    };
+
+    return (
+        <div className="flex flex-col h-full bg-gray-50">
+            <ToolHeader title="Dagelijkse Uitdaging" onBack={onBack} />
+            <div className="p-6 text-center flex-grow flex flex-col items-center justify-center">
+                {!isCompleted && (
+                    <div className="bg-green-100 border-2 border-green-400 rounded-xl p-3 mb-4">
+                        <p className="text-green-800 font-bold">+{new Date().getDay() === 6 ? '50' : '25'} punten! {new Date().getDay() === 6 ? '🔥 2x Wedstrijddag!' : '⭐'}</p>
+                    </div>
+                )}
+                <div className={`p-8 rounded-full mb-6 ${isCompleted ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                    {isCompleted ? <CheckCircle size={48}/> : <Zap size={48} />}
+                </div>
+                <p className="text-lg font-semibold mb-6">{todayChallenge}</p>
             </div>
-            <p className="text-lg font-semibold mb-6">{todayChallenge}</p>
+            <PrimaryButton onClick={handleComplete} disabled={isCompleted}>
+                {isCompleted ? 'Voltooid!' : 'Missie Volbracht'}
+            </PrimaryButton>
         </div>
-        <PrimaryButton onClick={onComplete} disabled={isCompleted}>
-            {isCompleted ? 'Voltooid!' : 'Missie Volbracht'}
-        </PrimaryButton>
-    </div>
-);
+    );
+};
 const ThoughtsScreen = ({ onBack, onSave, savedThought }) => {
+    const { addPoints, trackActivity } = usePoints();
     const [text, setText] = useState(savedThought || '');
+
+    const handleSave = () => {
+        if (text.trim()) {
+            const isMatchDay = new Date().getDay() === 6;
+            const basePoints = 15;
+            const points = isMatchDay ? basePoints * 2 : basePoints;
+
+            addPoints(points, `Gedachten Dump${isMatchDay ? ' (Wedstrijddag 2x!)' : ''}`);
+            trackActivity('toolbox_uses');
+            onSave(text);
+        }
+    };
+
     return (
         <div className="flex flex-col h-full bg-gray-50">
             <ToolHeader title="Gedachten Dump" onBack={onBack} />
             <div className="p-4 flex-grow">
+                <div className="bg-green-100 border-2 border-green-400 rounded-xl p-3 mb-4 text-center">
+                    <p className="text-green-800 font-bold">+{new Date().getDay() === 6 ? '30' : '15'} punten! {new Date().getDay() === 6 ? '🔥 2x Wedstrijddag!' : '⭐'}</p>
+                </div>
                 <TextAreaInput label="Waar denk je aan?" placeholder="Schrijf alles op wat in je opkomt..." value={text} onChange={(e) => setText(e.target.value)} />
             </div>
-            <PrimaryButton onClick={() => onSave(text)}>Opslaan</PrimaryButton>
+            <PrimaryButton onClick={handleSave}>Opslaan</PrimaryButton>
         </div>
     );
 };
 const GratitudeScreen = ({ onBack, onSave, savedGratitude }) => {
+    const { addPoints, trackActivity } = usePoints();
     const [text, setText] = useState(savedGratitude || '');
-     return (
+
+    const handleSave = () => {
+        if (text.trim()) {
+            const isMatchDay = new Date().getDay() === 6;
+            const basePoints = 20;
+            const points = isMatchDay ? basePoints * 2 : basePoints;
+
+            addPoints(points, `Dankbaarheidsdagboek${isMatchDay ? ' (Wedstrijddag 2x!)' : ''}`);
+            trackActivity('toolbox_uses');
+            onSave(text);
+        }
+    };
+
+    return (
         <div className="flex flex-col h-full bg-gray-50">
             <ToolHeader title="Dankbaarheidsdagboek" onBack={onBack} />
             <div className="p-4 flex-grow">
+                <div className="bg-green-100 border-2 border-green-400 rounded-xl p-3 mb-4 text-center">
+                    <p className="text-green-800 font-bold">+{new Date().getDay() === 6 ? '40' : '20'} punten! {new Date().getDay() === 6 ? '🔥 2x Wedstrijddag!' : '⭐'}</p>
+                </div>
                 <TextAreaInput label="Waar ben je dankbaar voor vandaag?" placeholder="Iets kleins of iets groots..." value={text} onChange={(e) => setText(e.target.value)} />
             </div>
-            <PrimaryButton onClick={() => onSave(text)}>Bewaren</PrimaryButton>
+            <PrimaryButton onClick={handleSave}>Bewaren</PrimaryButton>
         </div>
     );
 };
 const BreathingScreen = ({ onBack }) => {
+    const { addPoints, trackActivity } = usePoints();
     const [breathingState, setBreathingState] = useState('Klaar?');
     const [isActive, setIsActive] = useState(false);
+    const [sessionComplete, setSessionComplete] = useState(false);
+    const [cycles, setCycles] = useState(0);
 
     useEffect(() => {
-        if (!isActive) { setBreathingState('Klaar?'); return; }
+        if (!isActive) {
+            setBreathingState('Klaar?');
+            if (cycles >= 5 && !sessionComplete) {
+                const isMatchDay = new Date().getDay() === 6;
+                const basePoints = 25;
+                const points = isMatchDay ? basePoints * 2 : basePoints;
+
+                addPoints(points, `Ademhalingsoefening${isMatchDay ? ' (Wedstrijddag 2x!)' : ''}`);
+                trackActivity('breathing_sessions');
+                trackActivity('toolbox_uses');
+                setSessionComplete(true);
+            }
+            return;
+        }
+
         setBreathingState('Adem in...');
         const sequence = ['Houd vast...', 'Adem uit...', 'Adem in...'];
         let i = 0;
         const interval = setInterval(() => {
             setBreathingState(sequence[i]);
             i = (i + 1) % sequence.length;
+            if (i === 0) setCycles(prev => prev + 1);
         }, 4000);
         return () => clearInterval(interval);
     }, [isActive]);
@@ -517,6 +648,12 @@ const BreathingScreen = ({ onBack }) => {
         <div className="flex flex-col h-full bg-gray-50">
             <ToolHeader title="Adem Coach" onBack={onBack} />
             <div className="flex-grow flex flex-col items-center justify-center p-6 text-center">
+                <div className="bg-green-100 border-2 border-green-400 rounded-xl p-3 mb-4">
+                    <p className="text-green-800 font-bold">+{new Date().getDay() === 6 ? '50' : '25'} punten na 5 cycli! {new Date().getDay() === 6 ? '🔥 2x!' : '⭐'}</p>
+                </div>
+                <div className="mb-4">
+                    <p className="text-gray-700 font-bold">Cycli: {cycles}/5</p>
+                </div>
                 <div className="relative w-48 h-48 flex items-center justify-center">
                     {isActive && <div className="absolute w-full h-full bg-red-200 rounded-full animate-pulse"></div>}
                     <div className="w-40 h-40 bg-white border-4 border-red-500 rounded-full flex items-center justify-center z-0">
@@ -531,17 +668,32 @@ const BreathingScreen = ({ onBack }) => {
     );
 };
 const FullCheckinScreen = ({ onComplete, onBack }) => {
+    const { addPoints, trackActivity } = usePoints();
     const [data, setData] = useState({ physical: 5, mental: 5, concentration: 5, control: 5 });
+
+    const handleComplete = () => {
+        const isMatchDay = new Date().getDay() === 6;
+        const basePoints = 30;
+        const points = isMatchDay ? basePoints * 2 : basePoints;
+
+        addPoints(points, `Volledige Check-in${isMatchDay ? ' (Wedstrijddag 2x!)' : ''}`);
+        trackActivity('toolbox_uses');
+        onComplete(data);
+    };
+
     return (
         <div className="flex flex-col h-full bg-gray-50">
             <ToolHeader title="Volledige Check-in" onBack={onBack} />
             <div className="p-4 flex-grow overflow-y-auto">
+                <div className="bg-green-100 border-2 border-green-400 rounded-xl p-3 mb-4 text-center">
+                    <p className="text-green-800 font-bold">+{new Date().getDay() === 6 ? '60' : '30'} punten! {new Date().getDay() === 6 ? '🔥 2x Wedstrijddag!' : '⭐'}</p>
+                </div>
                 <SliderInput label="Hoe voel je je fysiek?" minLabel="Slecht" maxLabel="Uitstekend" value={data.physical} onChange={e => setData({...data, physical: e.target.value})} />
                 <SliderInput label="Hoe is je mentale toestand?" minLabel="Overweldigd" maxLabel="Helder" value={data.mental} onChange={e => setData({...data, mental: e.target.value})} />
                 <SliderInput label="Hoe is je concentratie?" minLabel="Verstrooid" maxLabel="Gefocust" value={data.concentration} onChange={e => setData({...data, concentration: e.target.value})} />
                 <SliderInput label="Hoeveel controle voel je?" minLabel="Geen" maxLabel="Volledig" value={data.control} onChange={e => setData({...data, control: e.target.value})} />
             </div>
-            <PrimaryButton onClick={() => onComplete(data)}>Check-in Voltooien</PrimaryButton>
+            <PrimaryButton onClick={handleComplete}>Check-in Voltooien</PrimaryButton>
         </div>
     );
 };
@@ -643,7 +795,7 @@ const MatchRitualScreen = ({ onBack, onSave, savedData }) => {
 
 
 // Wellness App Main Component
-const WellnessApp = ({ onBack, onLogout, initialView = 'toolbox' }) => {
+const WellnessAppContent = ({ onBack, onLogout, initialView = 'toolbox' }) => {
   const [currentView, setCurrentView] = useState(initialView);
   const [dailyData, setDailyData] = useState({});
   const getTodayDateString = () => new Date().toISOString().split('T')[0];
@@ -663,8 +815,9 @@ const WellnessApp = ({ onBack, onLogout, initialView = 'toolbox' }) => {
   const renderContent = () => {
     const today = getTodayDateString();
     const todayData = dailyData[today] || {};
-    
+
     switch (currentView) {
+      case 'match_day': return <MatchDay onBack={() => setCurrentView('toolbox')} />;
       case 'morning': return <MorningCheckinScreen onBack={() => setCurrentView('toolbox')} onComplete={(data) => handleToolCompletion('morning', data)} />;
       case 'challenge': return <ChallengeScreen onBack={() => setCurrentView('toolbox')} onComplete={() => handleToolCompletion('challenge', true)} isCompleted={!!todayData.challenge} />;
       case 'thoughts': return <ThoughtsScreen onBack={() => setCurrentView('toolbox')} onSave={(data) => handleToolCompletion('thoughts', data)} savedThought={todayData.thoughts} />;
@@ -698,6 +851,13 @@ const WellnessApp = ({ onBack, onLogout, initialView = 'toolbox' }) => {
     </div>
   );
 };
+
+// Wrapper component with PointsProvider
+const WellnessApp = (props) => (
+  <PointsProvider>
+    <WellnessAppContent {...props} />
+  </PointsProvider>
+);
 
 
 // === MAIN APP SWITCHER ===

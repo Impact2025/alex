@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Lock, LogIn, UserPlus, Delete } from 'lucide-react';
+import { User, Lock, LogIn, Delete } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 const LoginScreen = ({ onLogin }) => {
@@ -8,8 +8,8 @@ const LoginScreen = ({ onLogin }) => {
   const [pincode, setPincode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false);
   const [usePin, setUsePin] = useState(true);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   const handlePinLogin = async () => {
     setLoading(true);
@@ -41,7 +41,7 @@ const LoginScreen = ({ onLogin }) => {
     }
   };
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (usePin) {
@@ -82,6 +82,17 @@ const LoginScreen = ({ onLogin }) => {
     }
   };
 
+
+  const handlePinPress = (num) => {
+    if (pincode.length < 4) {
+      setPincode(pincode + num);
+    }
+  };
+
+  const handlePinDelete = () => {
+    setPincode(pincode.slice(0, -1));
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -117,7 +128,7 @@ const LoginScreen = ({ onLogin }) => {
 
       if (data.user) {
         setError('');
-        alert('Account aangemaakt! Je kunt nu inloggen.');
+        alert('Account aangemaakt! Log nu in met je gegevens.');
         setIsRegistering(false);
         setPincode('');
         setPassword('');
@@ -129,36 +140,26 @@ const LoginScreen = ({ onLogin }) => {
     }
   };
 
-  const handleSubmit = isRegistering ? handleRegister : handleLogin;
-
-  const handlePinPress = (num) => {
-    if (pincode.length < 4) {
-      setPincode(pincode + num);
-    }
-  };
-
-  const handlePinDelete = () => {
-    setPincode(pincode.slice(0, -1));
-  };
+  const finalHandleSubmit = isRegistering ? handleRegister : handleSubmit;
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center p-8 text-white"
+      className="min-h-screen md:flex md:flex-col md:items-center md:justify-center p-4 md:p-8 text-white flex flex-col justify-center"
       style={{
         background: 'linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url(https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Johan_Cruijff_ArenA_-_Zicht_vanaf_de_noordzijde.jpg/1920px-Johan_Cruijff_ArenA_-_Zicht_vanaf_de_noordzijde.jpg) center/cover no-repeat'
       }}
     >
-      <div className="text-center mb-8">
-        <h1 className="text-5xl font-bold mb-2">AJAX</h1>
-        <p className="text-xl text-gray-300">Performance Suite</p>
+      <div className="text-center mb-6 md:mb-8">
+        <h1 className="text-4xl md:text-5xl font-bold mb-2">AJAX</h1>
+        <p className="text-lg md:text-xl text-gray-300">Performance Suite</p>
       </div>
 
-      <div className="w-full max-w-sm bg-white rounded-2xl p-8 shadow-2xl">
+      <div className="w-full max-w-sm bg-white rounded-2xl p-6 md:p-8 shadow-2xl mx-auto">
         <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
           {isRegistering ? 'Registreren' : 'Inloggen'}
         </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={finalHandleSubmit} className="space-y-4">
           <div>
             <label className="block text-gray-700 font-semibold mb-2">Email</label>
             <div className="relative">
@@ -256,13 +257,14 @@ const LoginScreen = ({ onLogin }) => {
             disabled={loading || (usePin && pincode.length !== 4)}
             className="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2 disabled:bg-gray-400"
           >
-            {isRegistering ? <UserPlus size={20} /> : <LogIn size={20} />}
+            <LogIn size={20} />
             <span>{loading ? 'Bezig...' : (isRegistering ? 'Registreren' : 'Inloggen')}</span>
           </button>
         </form>
 
         <div className="flex flex-col gap-2 mt-4">
           <button
+            type="button"
             onClick={() => setUsePin(!usePin)}
             className="w-full text-gray-600 hover:text-red-600 font-semibold text-sm"
             disabled={loading}
@@ -271,6 +273,7 @@ const LoginScreen = ({ onLogin }) => {
           </button>
 
           <button
+            type="button"
             onClick={() => {
               setIsRegistering(!isRegistering);
               setPincode('');
@@ -280,7 +283,7 @@ const LoginScreen = ({ onLogin }) => {
             className="w-full text-gray-600 hover:text-red-600 font-semibold text-sm"
             disabled={loading}
           >
-            {isRegistering ? 'Al een account? Inloggen' : 'Nog geen account? Registreren'}
+            {isRegistering ? 'Al een account? Inloggen' : 'Nieuw account? Registreren'}
           </button>
         </div>
 
