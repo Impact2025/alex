@@ -68,6 +68,23 @@ const AjaxSleepApp = ({ onBack, onLogout }) => {
   const [showDribbelInput, setShowDribbelInput] = useState(false);
   const [dribbelDare, setDribbelDare] = useState('');
   const [dribbelTry, setDribbelTry] = useState('');
+
+  // Johan Cruijff quotes
+  const cruijffQuotes = [
+    "Elk nadeel heb z'n voordeel",
+    "Je moet schieten, anders kun je niet scoren",
+    "Voetbal is simpel, maar het moeilijkste wat er is, is simpel voetballen",
+    "Je gaat het pas zien als je het doorhebt",
+    "Als wij de bal hebben, kunnen zij niet scoren",
+    "Als je ergens niet bent, ben je of te vroeg, of te laat",
+    "Voetbal speel je met het hoofd, want de bal is vlugger dan de benen",
+    "Voordat ik een fout maak, maak ik die fout niet"
+  ];
+
+  const [dailyQuote] = useState(() => {
+    const randomIndex = Math.floor(Math.random() * cruijffQuotes.length);
+    return cruijffQuotes[randomIndex];
+  });
   
   const defaultMissions = [
     { id: 1, name: 'Kick-off Maaltijd', time: '18:00', goals: 0, icon: '🍽️', description: 'Eet samen en zeg waar je trots op bent.' },
@@ -139,6 +156,12 @@ const AjaxSleepApp = ({ onBack, onLogout }) => {
            <button onClick={onBack} className="bg-white bg-opacity-20 p-2 rounded-full"><Home className="w-6 h-6" /></button>
           <h1 className="text-2xl font-bold">Avondritueel</h1>
           <button onClick={onLogout} className="bg-white bg-opacity-20 p-2 rounded-full"><LogOut className="w-6 h-6" /></button>
+        </div>
+
+        {/* Johan Cruijff Quote */}
+        <div className="bg-white bg-opacity-10 rounded-2xl p-4 mb-6 border-2 border-white border-opacity-20">
+          <p className="text-xs font-semibold mb-1 opacity-75">💬 Johan Cruijff zegt:</p>
+          <p className="text-sm italic font-medium">"{dailyQuote}"</p>
         </div>
         <div className="text-center mb-8">
           <div className={`w-32 h-32 bg-gradient-to-br ${outfits[selectedOutfit].colors} rounded-full mx-auto mb-4 flex items-center justify-center relative border-4 border-white shadow-2xl`}>
