@@ -22,19 +22,28 @@ const LoginScreen = ({ onLogin }) => {
     }
 
     try {
+      console.log('Attempting PIN login with email:', email);
+
       // Use pincode as password
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email,
         password: pincode,
       });
 
-      if (error) throw error;
+      console.log('Login response:', { data, error });
+
+      if (error) {
+        console.error('Login error:', error);
+        throw error;
+      }
 
       if (data.user) {
+        console.log('Login successful:', data.user);
         onLogin(data.user);
       }
     } catch (error) {
-      setError('Inloggen mislukt. Controleer je gegevens.');
+      console.error('Login failed:', error);
+      setError(`Inloggen mislukt: ${error.message || 'Controleer je gegevens.'}`);
       setPincode('');
     } finally {
       setLoading(false);
@@ -65,18 +74,27 @@ const LoginScreen = ({ onLogin }) => {
     }
 
     try {
+      console.log('Attempting password login with email:', email);
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email,
         password: password,
       });
 
-      if (error) throw error;
+      console.log('Login response:', { data, error });
+
+      if (error) {
+        console.error('Login error:', error);
+        throw error;
+      }
 
       if (data.user) {
+        console.log('Login successful:', data.user);
         onLogin(data.user);
       }
     } catch (error) {
-      setError(error.message || 'Inloggen mislukt. Controleer je gegevens.');
+      console.error('Login failed:', error);
+      setError(`Inloggen mislukt: ${error.message || 'Controleer je gegevens.'}`);
     } finally {
       setLoading(false);
     }
