@@ -943,52 +943,8 @@ const App = () => {
         return <WellnessApp onBack={() => setActiveApp(null)} onLogout={handleLogout} initialView={initialWellnessView} />;
     }
 
-    return (
-        <div className="min-h-screen bg-gray-800 flex flex-col items-center justify-center p-8 text-white" style={{background: 'linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url(https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Johan_Cruijff_ArenA_-_Zicht_vanaf_de_noordzijde.jpg/1920px-Johan_Cruijff_ArenA_-_Zicht_vanaf_de_noordzijde.jpg) center/cover no-repeat'}}>
-            <div className="absolute top-4 right-4">
-                <button onClick={handleLogout} className="flex items-center space-x-2 bg-white bg-opacity-20 px-4 py-2 rounded-full hover:bg-opacity-30 transition-colors">
-                    <User size={20} />
-                    <span>{user.email}</span>
-                    <LogOut size={20} />
-                </button>
-            </div>
-            <h1 className="text-4xl font-bold mb-2">AJAX</h1>
-
-            {/* Inspirational Quote */}
-            <div className="w-full max-w-md bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl p-6 mb-8 border-2 border-white border-opacity-20">
-                <p className="text-xs font-semibold mb-2 opacity-75">⚽ {dailyQuote.player}</p>
-                <p className="text-base italic font-medium mb-3">"{dailyQuote.quote}"</p>
-                <div className="flex items-start space-x-2 bg-white bg-opacity-10 rounded-lg p-3">
-                    <span className="text-lg">👉</span>
-                    <p className="text-sm font-semibold">{dailyQuote.lesson}</p>
-                </div>
-            </div>
-
-            <div className="w-full max-w-sm space-y-4">
-                <button onClick={() => handleSelect('sleep')} className="w-full bg-white p-5 rounded-xl text-left flex items-center transition-transform hover:scale-105 shadow-lg">
-                    <div className="w-1.5 h-12 bg-red-600 rounded-full mr-4"></div>
-                    <div>
-                        <h2 className="text-lg font-bold text-gray-800">Slaap Routine</h2>
-                        <p className="text-gray-500 text-sm">Voltooi missies voor het slapengaan.</p>
-                    </div>
-                </button>
-                 <button onClick={() => handleSelect('wellness', 'match_ritual')} className="w-full bg-white p-5 rounded-xl text-left flex items-center transition-transform hover:scale-105 shadow-lg">
-                    <div className="w-1.5 h-12 bg-red-600 rounded-full mr-4"></div>
-                    <div>
-                        <h2 className="text-lg font-bold text-gray-800">Wedstrijddag</h2>
-                        <p className="text-gray-500 text-sm">Mentale voorbereiding en reflectie.</p>
-                    </div>
-                </button>
-                <button onClick={() => handleSelect('wellness', 'toolbox')} className="w-full bg-white p-5 rounded-xl text-left flex items-center transition-transform hover:scale-105 shadow-lg">
-                     <div className="w-1.5 h-12 bg-red-600 rounded-full mr-4"></div>
-                     <div>
-                        <h2 className="text-lg font-bold text-gray-800">Wellness Toolbox</h2>
-                        <p className="text-gray-500 text-sm">Tools voor je mentale en fysieke fitheid.</p>
-                    </div>
-                </button>
-            </div>
-        </div>
-    );
+    // Direct naar wellness toolbox (alles in 1 overzicht)
+    return <WellnessApp onBack={() => setActiveApp(null)} onLogout={handleLogout} initialView="toolbox" />;
 };
 
 export default App;
