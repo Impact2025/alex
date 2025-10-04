@@ -112,7 +112,7 @@ const LoginScreen = ({ onLogin }) => {
                   setEmail(e.target.value);
                   setError('');
                 }}
-                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:border-red-600 focus:outline-none text-gray-800"
+                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:border-red-600 focus:outline-none text-gray-800 bg-white"
                 placeholder="je@email.com"
                 disabled={loading}
               />
@@ -130,7 +130,7 @@ const LoginScreen = ({ onLogin }) => {
                   setPassword(e.target.value);
                   setError('');
                 }}
-                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:border-red-600 focus:outline-none text-gray-800"
+                className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:border-red-600 focus:outline-none text-gray-800 bg-white"
                 placeholder="Minimaal 6 tekens"
                 disabled={loading}
               />
