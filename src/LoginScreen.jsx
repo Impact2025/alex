@@ -10,6 +10,21 @@ const LoginScreen = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [usePin, setUsePin] = useState(true);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+
+  // Load saved credentials on mount
+  React.useEffect(() => {
+    const saved = localStorage.getItem('ajax_remember_credentials');
+    if (saved) {
+      try {
+        const { email: savedEmail, rememberMe: savedRemember } = JSON.parse(saved);
+        setEmail(savedEmail);
+        setRememberMe(savedRemember);
+      } catch (e) {
+        console.error('Error loading saved credentials:', e);
+      }
+    }
+  }, []);
 
   const handlePinLogin = async () => {
     setLoading(true);
@@ -39,6 +54,17 @@ const LoginScreen = ({ onLogin }) => {
 
       if (data.user) {
         console.log('Login successful:', data.user);
+
+        // Save credentials if remember me is checked
+        if (rememberMe) {
+          localStorage.setItem('ajax_remember_credentials', JSON.stringify({
+            email: email,
+            rememberMe: true
+          }));
+        } else {
+          localStorage.removeItem('ajax_remember_credentials');
+        }
+
         onLogin(data.user);
       }
     } catch (error) {
@@ -90,6 +116,17 @@ const LoginScreen = ({ onLogin }) => {
 
       if (data.user) {
         console.log('Login successful:', data.user);
+
+        // Save credentials if remember me is checked
+        if (rememberMe) {
+          localStorage.setItem('ajax_remember_credentials', JSON.stringify({
+            email: email,
+            rememberMe: true
+          }));
+        } else {
+          localStorage.removeItem('ajax_remember_credentials');
+        }
+
         onLogin(data.user);
       }
     } catch (error) {
@@ -183,7 +220,7 @@ const LoginScreen = ({ onLogin }) => {
     >
       <div className="text-center mb-6 md:mb-8">
         <h1 className="text-4xl md:text-5xl font-bold mb-2">AJAX</h1>
-        <p className="text-lg md:text-xl text-gray-300">Performance Suite</p>
+        <p className="text-lg md:text-xl text-gray-300">Speel slimmer, voel je sterker</p>
       </div>
 
       <div className="w-full max-w-sm bg-white rounded-2xl p-6 md:p-8 shadow-2xl mx-auto">
@@ -283,6 +320,20 @@ const LoginScreen = ({ onLogin }) => {
               {error}
             </div>
           )}
+
+          {/* Remember Me Checkbox */}
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="rememberMe"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+            />
+            <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-700">
+              Onthoud mijn email
+            </label>
+          </div>
 
           <button
             type="submit"

@@ -6,6 +6,9 @@ import { PointsProvider, usePoints } from './PointsContext';
 import { LevelUpModal, AchievementModal } from './components/AchievementModals';
 import PointsDashboard from './components/PointsDashboard';
 import MatchDay from './components/MatchDay';
+import Journal from './components/Journal';
+import * as dailyEntryService from './dailyEntryService';
+import * as notificationService from './notificationService';
 
 // === MODAL COMPONENTS ===
 const RewardModal = ({ show, rewardType, onClose, weeklyRewards }) => {
@@ -33,11 +36,46 @@ const DribbelInputModal = ({ show, onClose, onSubmit, dareValue, onDareChange, t
               <div className="space-y-4">
                   <div>
                       <label className="block font-semibold text-gray-700 mb-1">Vandaag durfde ik...</label>
-                      <textarea value={dareValue} onChange={onDareChange} rows="3" className="w-full p-2 border-2 border-gray-200 rounded-lg" placeholder="...iets te vragen in de klas."></textarea>
+                      <textarea value={dareValue} onChange={onDareChange} rows="3" className="w-full p-2 border-2 border-gray-200 rounded-lg text-gray-900" placeholder="...iets te vragen in de klas."></textarea>
                   </div>
                   <div>
                       <label className="block font-semibold text-gray-700 mb-1">Morgen ga ik proberen...</label>
-                      <textarea value={tryValue} onChange={onTryChange} rows="3" className="w-full p-2 border-2 border-gray-200 rounded-lg" placeholder="...een nieuw recept uit te proberen."></textarea>
+                      <textarea value={tryValue} onChange={onTryChange} rows="3" className="w-full p-2 border-2 border-gray-200 rounded-lg text-gray-900" placeholder="...een nieuw recept uit te proberen."></textarea>
+                  </div>
+              </div>
+              <div className="mt-6 flex flex-col gap-2">
+                  <button onClick={onSubmit} disabled={isButtonDisabled} className={`w-full text-white font-bold py-3 rounded-full ${isButtonDisabled ? 'bg-gray-400' : 'bg-red-600'}`}>
+                      Voltooi Missie (+1 goal)
+                  </button>
+                  <button onClick={onClose} className="w-full text-gray-600 font-bold py-2">
+                      Annuleren
+                  </button>
+              </div>
+          </div>
+      </div>
+  );
+};
+
+const GratitudeInputModal = ({ show, onClose, onSubmit, value1, onChange1, value2, onChange2, value3, onChange3 }) => {
+  if (!show) return null;
+  const isButtonDisabled = !value1.trim() || !value2.trim() || !value3.trim();
+  return (
+      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm">
+              <h2 className="text-xl font-bold text-red-700 mb-4">Dankbaarheid ⭐</h2>
+              <p className="text-sm text-gray-600 mb-4">Schrijf 3 dingen waar je vandaag dankbaar voor bent:</p>
+              <div className="space-y-3">
+                  <div>
+                      <label className="block font-semibold text-gray-700 mb-1">1. Ik ben dankbaar voor...</label>
+                      <input type="text" value={value1} onChange={onChange1} className="w-full p-3 border-2 border-gray-200 rounded-lg text-gray-900" placeholder="...mijn familie"></input>
+                  </div>
+                  <div>
+                      <label className="block font-semibold text-gray-700 mb-1">2. Ik ben dankbaar voor...</label>
+                      <input type="text" value={value2} onChange={onChange2} className="w-full p-3 border-2 border-gray-200 rounded-lg text-gray-900" placeholder="...mijn vrienden"></input>
+                  </div>
+                  <div>
+                      <label className="block font-semibold text-gray-700 mb-1">3. Ik ben dankbaar voor...</label>
+                      <input type="text" value={value3} onChange={onChange3} className="w-full p-3 border-2 border-gray-200 rounded-lg text-gray-900" placeholder="...voetbal kunnen spelen"></input>
                   </div>
               </div>
               <div className="mt-6 flex flex-col gap-2">
@@ -55,7 +93,7 @@ const DribbelInputModal = ({ show, onClose, onSubmit, dareValue, onDareChange, t
 
 // === App 1: Ajax Sleep App (Standalone Version) ===
 
-const AjaxSleepAppContent = ({ onBack, onLogout }) => {
+const AjaxSleepAppContent = ({ onBack, onLogout, user }) => {
   const points = usePoints();
   const [currentView, setCurrentView] = useState('home');
   const [parentMode, setParentMode] = useState(false);
@@ -73,6 +111,12 @@ const AjaxSleepAppContent = ({ onBack, onLogout }) => {
   const [showDribbelInput, setShowDribbelInput] = useState(false);
   const [dribbelDare, setDribbelDare] = useState('');
   const [dribbelTry, setDribbelTry] = useState('');
+
+  // State for the Gratitude input modal
+  const [showGratitudeInput, setShowGratitudeInput] = useState(false);
+  const [gratitude1, setGratitude1] = useState('');
+  const [gratitude2, setGratitude2] = useState('');
+  const [gratitude3, setGratitude3] = useState('');
 
   // Johan Cruijff quotes
   const cruijffQuotes = [
@@ -97,8 +141,9 @@ const AjaxSleepAppContent = ({ onBack, onLogout }) => {
     { id: 3, name: 'Warming-up Johan Cruijff', time: '18:45', goals: 2, points: 20, icon: '📺', description: 'Kijk Klokhuis (max. 15 min) + 10 push-ups.' },
     { id: 4, name: 'Fris-op Vrije Trap', time: '19:15', goals: 1, points: 15, icon: '🚿', description: 'Douchen/wassen, tanden poetsen, pyjama aan.' },
     { id: 5, name: 'Pyjama-Dribbel', time: '19:30', goals: 1, points: 15, icon: '✎', description: 'Schrijf: "Vandaag durfde ik..." & "Morgen ga ik proberen..."' },
-    { id: 6, name: 'Bonuslevel voor Kampioenen', time: '19:40', goals: 0.5, points: 10, icon: '⚡', description: 'Kies 1: Puzzel, creatieve opdracht, of coachvraag.' },
-    { id: 7, name: 'Finale Fluitsignaal', time: '20:00', goals: 2, points: 20, icon: '🌙', description: 'Ogen dicht, glimlach en droom over...' }
+    { id: 6, name: 'Dankbaarheid', time: '19:35', goals: 1, points: 20, icon: '⭐', description: 'Schrijf 3 dingen waar je dankbaar voor bent.' },
+    { id: 7, name: 'Bonuslevel voor Kampioenen', time: '19:40', goals: 0.5, points: 10, icon: '⚡', description: 'Kies 1: Puzzel, creatieve opdracht, of coachvraag.' },
+    { id: 8, name: 'Finale Fluitsignaal', time: '20:00', goals: 2, points: 20, icon: '🌙', description: 'Ogen dicht, glimlach en droom over...' }
   ];
 
   const weeklyRewards = {
@@ -125,7 +170,7 @@ const AjaxSleepAppContent = ({ onBack, onLogout }) => {
   const [missions, setMissions] = useState(defaultMissions);
   const playSound = (type) => { console.log(`🔊 Playing ${type} sound`); };
   
-  const completeMission = (missionId) => {
+  const completeMission = async (missionId) => {
     if (!completedMissions[missionId]) {
       const mission = missions.find(m => m.id === missionId);
       const newWeeklyTotal = weeklyGoals + mission.goals;
@@ -140,9 +185,14 @@ const AjaxSleepAppContent = ({ onBack, onLogout }) => {
         points.addPoints(mission.points, mission.name);
       }
 
+      // Save to database
+      if (user) {
+        await dailyEntryService.saveCompletedMission(user.id, missionId);
+      }
+
       // Check for early bird achievement
       const currentHour = new Date().getHours();
-      if (missionId === 7 && currentHour < 20) {
+      if (missionId === 8 && currentHour < 20) {
         points.trackActivity('early_bird');
       }
 
@@ -156,12 +206,32 @@ const AjaxSleepAppContent = ({ onBack, onLogout }) => {
     }
   };
   
-  const handleDribbelSubmit = () => {
+  const handleDribbelSubmit = async () => {
       if(dribbelDare.trim() && dribbelTry.trim()) {
+          // Save to database
+          if (user) {
+              await dailyEntryService.saveDribbelData(user.id, dribbelDare, dribbelTry);
+          }
+
           completeMission(5);
           setDribbelDare('');
           setDribbelTry('');
           setShowDribbelInput(false);
+      }
+  };
+
+  const handleGratitudeSubmit = async () => {
+      if(gratitude1.trim() && gratitude2.trim() && gratitude3.trim()) {
+          // Save to database
+          if (user) {
+              await dailyEntryService.saveGratitudeData(user.id, gratitude1, gratitude2, gratitude3);
+          }
+
+          completeMission(6);
+          setGratitude1('');
+          setGratitude2('');
+          setGratitude3('');
+          setShowGratitudeInput(false);
       }
   };
 
@@ -218,56 +288,163 @@ const AjaxSleepAppContent = ({ onBack, onLogout }) => {
         </div>
         <div className="space-y-4">
             <button onClick={() => setCurrentView('missions')} className="w-full bg-white text-red-700 py-4 px-6 rounded-full font-bold text-lg flex items-center justify-center shadow-lg"><Play className="w-6 h-6 mr-2" />Start Missies!</button>
-            <div className="grid grid-cols-2 gap-4">
-                <button onClick={() => setCurrentView('scorecard')} className="bg-white bg-opacity-20 text-white py-3 rounded-full font-bold flex items-center justify-center hover:bg-opacity-30 transition-colors"><Award className="w-5 h-5 mr-2" />Scorekaart</button>
-                <button onClick={() => setCurrentView('badges')} className="bg-white bg-opacity-20 text-white py-3 rounded-full font-bold flex items-center justify-center hover:bg-opacity-30 transition-colors relative"><Trophy className="w-5 h-5 mr-2" />Badges</button>
-            </div>
         </div>
       </div>
     </div>
   );
   
-    const MissionsScreen = () => (
-    <div className="bg-gradient-to-b from-gray-100 to-gray-200 min-h-screen text-gray-800">
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
-          <button onClick={() => setCurrentView('home')} className="p-2 bg-white shadow-md rounded-full"><Home className="w-6 h-6 text-red-600" /></button>
-          <h1 className="text-2xl font-bold text-red-700">Dagelijkse Missies</h1>
-          <div className="p-2"><Volume2 className="w-6 h-6" /></div>
-        </div>
-        <div className="space-y-3">
-          {missions.map((mission) => (
-            <div key={mission.id} className={`p-4 rounded-2xl transition-all duration-300 shadow-md ${completedMissions[mission.id] ? 'bg-red-700 text-white' : 'bg-white'}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="text-4xl">{mission.icon}</div>
-                  <div>
-                    <div className="flex items-baseline space-x-2">
-                        <h3 className="font-bold text-lg">{mission.name}</h3>
-                        <p className={`text-xs font-semibold ${completedMissions[mission.id] ? 'text-white' : 'text-gray-500'}`}>{mission.time}</p>
-                    </div>
-                    <p className={`text-sm ${completedMissions[mission.id] ? 'opacity-90' : 'text-gray-600'}`}>{mission.description}</p>
-                    {mission.points && (
-                      <div className={`inline-flex items-center space-x-1 mt-1 px-2 py-1 rounded-full text-xs font-bold ${completedMissions[mission.id] ? 'bg-white bg-opacity-20 text-white' : 'bg-green-100 text-green-700'}`}>
-                        <Star className="w-3 h-3" fill={completedMissions[mission.id] ? 'white' : 'currentColor'} />
-                        <span>{mission.points} punten</span>
+    const MissionsScreen = () => {
+      const completedCount = Object.keys(completedMissions).length;
+      const hasCompletedAny = completedCount > 0;
+
+      // Calculate today's earned points
+      const todayPoints = missions
+        .filter(m => completedMissions[m.id])
+        .reduce((sum, m) => sum + (m.points || 0), 0);
+
+      const dreamMessages = [
+        "...een geweldige goal die je scoort! 🥅",
+        "...de mooiste pass die je geeft! ⚽",
+        "...een kampioenschap dat je wint! 🏆",
+        "...je vrienden en jullie samen lachen! 😄",
+        "...de beste wedstrijd die je ooit speelt! ⭐",
+        "...een avontuur dat je beleeft! 🌟",
+        "...iets moois dat je morgen gaat doen! 🌈",
+        "...een moment waar je trots op bent! 💪",
+        "...de Ajax Arena die voor jou juicht! 🎉",
+        "...jouw allergrootste droom! ✨"
+      ];
+
+      const [todayDream] = useState(() => {
+        const randomIndex = Math.floor(Math.random() * dreamMessages.length);
+        return dreamMessages[randomIndex];
+      });
+
+      const handleFinish = () => {
+        if (hasCompletedAny) {
+          setCurrentView('finish');
+        }
+      };
+
+      return (
+        <div className="bg-gradient-to-b from-gray-100 to-gray-200 min-h-screen text-gray-800">
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <button onClick={() => setCurrentView('home')} className="p-2 bg-white shadow-md rounded-full"><Home className="w-6 h-6 text-red-600" /></button>
+              <h1 className="text-2xl font-bold text-red-700">Dagelijkse Missies</h1>
+              <div className="p-2"><Volume2 className="w-6 h-6" /></div>
+            </div>
+            <div className="space-y-3">
+              {missions.map((mission) => (
+                <div key={mission.id} className={`p-4 rounded-2xl transition-all duration-300 shadow-md ${completedMissions[mission.id] ? 'bg-red-700 text-white' : 'bg-white'}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="text-4xl">{mission.icon}</div>
+                      <div>
+                        <div className="flex items-baseline space-x-2">
+                            <h3 className="font-bold text-lg">{mission.name}</h3>
+                            <p className={`text-xs font-semibold ${completedMissions[mission.id] ? 'text-white' : 'text-gray-500'}`}>{mission.time}</p>
+                        </div>
+                        <p className={`text-sm ${completedMissions[mission.id] ? 'opacity-90' : 'text-gray-600'}`}>{mission.description}</p>
+                        {mission.points && (
+                          <div className={`inline-flex items-center space-x-1 mt-1 px-2 py-1 rounded-full text-xs font-bold ${completedMissions[mission.id] ? 'bg-white bg-opacity-20 text-white' : 'bg-green-100 text-green-700'}`}>
+                            <Star className="w-3 h-3" fill={completedMissions[mission.id] ? 'white' : 'currentColor'} />
+                            <span>{mission.points} punten</span>
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (mission.id === 5) setShowDribbelInput(true);
+                        else if (mission.id === 6) setShowGratitudeInput(true);
+                        else completeMission(mission.id);
+                      }}
+                      disabled={completedMissions[mission.id]}
+                      className={`p-3 rounded-full transition-transform transform hover:scale-110 ${completedMissions[mission.id] ? 'bg-white text-red-700' : 'bg-gray-200 text-gray-700'}`}>
+                      {completedMissions[mission.id] ? <CheckCircle className="w-8 h-8" /> : <Circle className="w-8 h-8" />}
+                    </button>
                   </div>
                 </div>
-                <button 
-                  onClick={() => mission.id === 5 ? setShowDribbelInput(true) : completeMission(mission.id)} 
-                  disabled={completedMissions[mission.id]} 
-                  className={`p-3 rounded-full transition-transform transform hover:scale-110 ${completedMissions[mission.id] ? 'bg-white text-red-700' : 'bg-gray-200 text-gray-700'}`}>
-                  {completedMissions[mission.id] ? <CheckCircle className="w-8 h-8" /> : <Circle className="w-8 h-8" />}
-                </button>
-              </div>
+              ))}
             </div>
-          ))}
+
+            {hasCompletedAny && (
+              <button
+                onClick={handleFinish}
+                className="w-full mt-6 bg-red-600 text-white font-bold py-4 px-6 rounded-full text-lg shadow-lg hover:bg-red-700 transition-colors flex items-center justify-center"
+              >
+                <Moon className="w-6 h-6 mr-2" />
+                Dag Afsluiten
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+  const FinishScreen = () => {
+    // Calculate today's earned points
+    const todayPoints = missions
+      .filter(m => completedMissions[m.id])
+      .reduce((sum, m) => sum + (m.points || 0), 0);
+
+    const dreamMessages = [
+      "...een geweldige goal die je scoort! 🥅",
+      "...de mooiste pass die je geeft! ⚽",
+      "...een kampioenschap dat je wint! 🏆",
+      "...je vrienden en jullie samen lachen! 😄",
+      "...de beste wedstrijd die je ooit speelt! ⭐",
+      "...een avontuur dat je beleeft! 🌟",
+      "...iets moois dat je morgen gaat doen! 🌈",
+      "...een moment waar je trots op bent! 💪",
+      "...de Ajax Arena die voor jou juicht! 🎉",
+      "...jouw allergrootste droom! ✨"
+    ];
+
+    const [todayDream] = useState(() => {
+      const randomIndex = Math.floor(Math.random() * dreamMessages.length);
+      return dreamMessages[randomIndex];
+    });
+
+    return (
+      <div className="bg-gradient-to-b from-red-700 to-red-900 min-h-screen text-white flex flex-col items-center justify-center p-6">
+        <div className="text-center max-w-md">
+          <div className="text-8xl mb-6 animate-bounce">🌙✨</div>
+          <h1 className="text-4xl font-bold mb-4">Goed Gedaan!</h1>
+          <p className="text-xl mb-8">Je hebt vandaag missies volbracht!</p>
+
+          <div className="bg-white text-gray-800 rounded-3xl p-8 mb-8 shadow-2xl">
+            <p className="text-sm font-semibold text-gray-600 mb-2">Vandaag verdiend:</p>
+            <div className="flex items-center justify-center space-x-3 mb-4">
+              <Trophy className="w-12 h-12 text-yellow-500" />
+              <p className="text-6xl font-bold text-red-600">+{todayPoints}</p>
+            </div>
+            <p className="text-lg font-bold text-gray-700">punten!</p>
+
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <p className="text-sm font-semibold text-gray-600 mb-2">Totaal punten:</p>
+              <p className="text-3xl font-bold text-red-600">{points.totalPoints}</p>
+            </div>
+          </div>
+
+          <div className="bg-white bg-opacity-10 backdrop-blur rounded-2xl p-6 mb-8 border-2 border-white border-opacity-20">
+            <p className="text-lg font-semibold mb-3">💭 Droom nu over...</p>
+            <p className="text-2xl font-bold">{todayDream}</p>
+          </div>
+
+          <p className="text-lg mb-8 opacity-90">Welterusten, kampioen! 🏆</p>
+
+          <button
+            onClick={onLogout}
+            className="bg-white text-red-700 font-bold py-4 px-8 rounded-full text-lg shadow-lg hover:bg-gray-100 transition-colors"
+          >
+            Sluiten
+          </button>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const ScorecardScreen = () => (
       <div className="bg-gray-100 min-h-screen text-gray-800 p-6">
@@ -326,8 +503,7 @@ const AjaxSleepAppContent = ({ onBack, onLogout }) => {
     switch (currentView) {
       case 'home': return <HomeScreen />;
       case 'missions': return <MissionsScreen />;
-      case 'scorecard': return <ScorecardScreen />;
-      case 'badges': return <BadgesScreen />;
+      case 'finish': return <FinishScreen />;
       case 'points': return <PointsDashboard onBack={() => setCurrentView('home')} />;
       default: return <HomeScreen />;
     }
@@ -351,6 +527,17 @@ const AjaxSleepAppContent = ({ onBack, onLogout }) => {
           tryValue={dribbelTry}
           onTryChange={(e) => setDribbelTry(e.target.value)}
         />
+        <GratitudeInputModal
+          show={showGratitudeInput}
+          onClose={() => setShowGratitudeInput(false)}
+          onSubmit={handleGratitudeSubmit}
+          value1={gratitude1}
+          onChange1={(e) => setGratitude1(e.target.value)}
+          value2={gratitude2}
+          onChange2={(e) => setGratitude2(e.target.value)}
+          value3={gratitude3}
+          onChange3={(e) => setGratitude3(e.target.value)}
+        />
         <LevelUpModal
           show={points.showLevelUp}
           level={points.newLevel}
@@ -369,7 +556,7 @@ const AjaxSleepAppContent = ({ onBack, onLogout }) => {
 
 // Wrapper component with PointsProvider
 const AjaxSleepApp = (props) => (
-  <PointsProvider>
+  <PointsProvider userId={props.user?.id}>
     <AjaxSleepAppContent {...props} />
   </PointsProvider>
 );
@@ -378,26 +565,31 @@ const AjaxSleepApp = (props) => (
 // === App 2: Ajax Wellness Toolbox ===
 
 const ToolHeader = ({ title, onBack }) => (
-    <div className="flex items-center p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
-        <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-100"><ArrowLeft className="text-red-600" /></button>
-        <h1 className="text-xl font-bold text-center flex-grow text-red-700">{title}</h1>
-        <div className="w-10"></div>
+    <div className="flex items-center p-3 border-b border-gray-200 bg-white sticky top-0 z-10">
+        <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-100 flex-shrink-0">
+            <ArrowLeft className="text-red-600" size={20} />
+        </button>
+        <h1 className="text-lg md:text-xl font-bold text-center flex-1 text-red-700 px-2">{title}</h1>
+        <div className="w-9"></div>
     </div>
 );
 const SliderInput = ({ label, minLabel, maxLabel, value, onChange }) => (
-    <div className="mb-8 bg-white p-4 rounded-2xl shadow-sm">
-        <label className="block font-semibold text-gray-800 mb-3 text-lg">{label}</label>
-        <div className="flex items-center space-x-4">
-            <span className="font-bold text-red-600 text-2xl">{value}</span>
-            <input type="range" min="1" max="10" value={value} onChange={onChange} className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer range-thumb" />
+    <div className="mb-6 bg-white p-3 rounded-2xl shadow-sm">
+        <label className="block font-semibold text-gray-800 mb-2 text-base">{label}</label>
+        <div className="flex items-center space-x-3">
+            <span className="font-bold text-red-600 text-xl min-w-[30px]">{value}</span>
+            <input type="range" min="1" max="10" value={value} onChange={onChange} className="flex-1 h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer range-thumb" />
         </div>
-        <div className="flex justify-between text-xs text-gray-500 mt-2"><span>{minLabel}</span><span>{maxLabel}</span></div>
+        <div className="flex justify-between text-xs text-gray-500 mt-2 px-1">
+            <span className="text-left">{minLabel}</span>
+            <span className="text-right">{maxLabel}</span>
+        </div>
     </div>
 );
 const TextAreaInput = ({ label, placeholder, value, onChange }) => (
     <div className="mb-6 bg-white p-4 rounded-2xl shadow-sm">
         <label className="block font-semibold text-gray-800 mb-2 text-lg">{label}</label>
-        <textarea value={value} onChange={onChange} rows="4" className="w-full p-3 bg-gray-50 border-2 border-gray-200 rounded-lg focus:border-red-500 focus:ring-red-500" placeholder={placeholder}></textarea>
+        <textarea value={value} onChange={onChange} rows="4" className="w-full p-3 bg-gray-50 border-2 border-gray-200 rounded-lg focus:border-red-500 focus:ring-red-500 text-gray-900" placeholder={placeholder}></textarea>
     </div>
 );
 const PrimaryButton = ({ onClick, children, disabled=false }) => (
@@ -437,22 +629,19 @@ const ToolboxScreen = ({ onSelectTool, onBack, onLogout }) => {
     });
 
     const tools = [
-        { id: 'morning', icon: Sun, title: "Ochtend Intentie" },
+        { id: 'morning', icon: Sun, title: "Goedemorgen Start" },
         { id: 'challenge', icon: Zap, title: "Dagelijkse Uitdaging" },
         { id: 'thoughts', icon: Brain, title: "Gedachten Dump" },
-        { id: 'gratitude', icon: Star, title: "Dankbaarheid" },
         { id: 'breathing', icon: Wind, title: "Adem Coach" },
-        { id: 'full_checkin', icon: BarChart3, title: "Volledige Check-in" },
-        { id: 'match_ritual', icon: ClipboardList, title: "Wedstrijd Ritueel"},
-        { id: 'evening', icon: Moon, title: "Avond Routine" },
+        { id: 'evening', icon: Moon, title: "Avondritueel" },
+        { id: 'journal', icon: BookOpen, title: "Mijn Dagboek" },
     ];
 
     return (
         <div className="p-4 bg-gray-100 min-h-screen">
-             <div className="flex justify-between items-center mb-4 px-2">
-                <button onClick={onLogout} className="p-2 rounded-full bg-white shadow-md"><LogOut className="text-red-600"/></button>
-                <h1 className="text-3xl font-bold">AJAX 🧰</h1>
-                <div className="w-10"></div>
+             <div className="flex justify-between items-center mb-4">
+                <h1 className="text-2xl md:text-3xl font-bold flex-1">AJAX 🧰</h1>
+                <button onClick={onLogout} className="p-2 rounded-full bg-white shadow-md ml-2"><LogOut className="text-red-600" size={20}/></button>
             </div>
 
             {/* Points & Level Card - Clickable */}
@@ -516,62 +705,127 @@ const ToolboxScreen = ({ onSelectTool, onBack, onLogout }) => {
                 </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
                 {tools.map((tool, index) => (
                     <button
                         key={tool.id}
                         onClick={() => onSelectTool(tool.id)}
-                        className={`p-4 rounded-2xl font-bold flex flex-col items-center justify-center aspect-square shadow-md hover:scale-105 transition-transform relative ${
+                        className={`p-3 rounded-2xl font-bold flex flex-col items-center justify-center min-h-[120px] shadow-md active:scale-95 transition-transform relative ${
                             index % 3 === 0 ? 'bg-red-600 text-white' : 'bg-white text-gray-800'
                         }`}
                     >
                         {isMatchDay && (
-                            <div className="absolute top-1 right-1 bg-yellow-400 text-yellow-900 text-xs px-2 py-1 rounded-full font-black">
+                            <div className="absolute top-1 right-1 bg-yellow-400 text-yellow-900 text-xs px-1.5 py-0.5 rounded-full font-black">
                                 2x
                             </div>
                         )}
-                        <tool.icon size={32} className={`mb-2 ${index % 3 === 0 ? 'text-white' : 'text-red-600'}`} />
-                        <span className="text-center text-sm">{tool.title}</span>
+                        <tool.icon size={28} className={`mb-2 ${index % 3 === 0 ? 'text-white' : 'text-red-600'}`} />
+                        <span className="text-center text-xs leading-tight">{tool.title}</span>
                     </button>
                 ))}
             </div>
         </div>
     );
 };
-const MorningCheckinScreen = ({ onBack, onComplete }) => {
+const MorningCheckinScreen = ({ onBack, onComplete, user }) => {
     const { addPoints, trackActivity } = usePoints();
     const [sleep, setSleep] = useState(5);
     const [goal, setGoal] = useState('');
+    const [physical, setPhysical] = useState(5);
+    const [mental, setMental] = useState(5);
+    const [concentration, setConcentration] = useState(5);
+    const [control, setControl] = useState(5);
+    const [isLoading, setIsLoading] = useState(true);
+    const [hasExistingEntry, setHasExistingEntry] = useState(false);
 
-    const handleComplete = () => {
-        const isMatchDay = new Date().getDay() === 6;
-        const basePoints = 20;
-        const points = isMatchDay ? basePoints * 2 : basePoints;
+    // Load existing entry for today
+    useEffect(() => {
+        const loadTodayEntry = async () => {
+            if (!user) {
+                setIsLoading(false);
+                return;
+            }
 
-        addPoints(points, `Ochtend Intentie${isMatchDay ? ' (Wedstrijddag 2x!)' : ''}`);
-        trackActivity('toolbox_uses');
-        onComplete({sleep, goal});
+            const entry = await dailyEntryService.getTodayEntry(user.id);
+            if (entry && entry.morning_goal) {
+                // Entry exists with morning data, load it
+                setSleep(entry.morning_sleep || 5);
+                setGoal(entry.morning_goal || '');
+                setPhysical(entry.morning_physical || 5);
+                setMental(entry.morning_mental || 5);
+                setConcentration(entry.morning_concentration || 5);
+                setControl(entry.morning_control || 5);
+                setHasExistingEntry(true);
+            }
+            setIsLoading(false);
+        };
+
+        loadTodayEntry();
+    }, [user]);
+
+    const handleComplete = async () => {
+        // Only award points if this is the first time completing today
+        if (!hasExistingEntry) {
+            const isMatchDay = new Date().getDay() === 6;
+            const basePoints = 30;
+            const points = isMatchDay ? basePoints * 2 : basePoints;
+
+            addPoints(points, `Goedemorgen Start${isMatchDay ? ' (Wedstrijddag 2x!)' : ''}`);
+            trackActivity('toolbox_uses');
+        }
+
+        // Save to database (always save to update data)
+        if (user) {
+            await dailyEntryService.saveMorningCheckin(user.id, {
+                sleep, goal, physical, mental, concentration, control
+            });
+        }
+
+        onComplete({sleep, goal, physical, mental, concentration, control});
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col h-full bg-gray-50">
+                <ToolHeader title="Goedemorgen Start" onBack={onBack} />
+                <div className="p-4 flex items-center justify-center flex-grow">
+                    <p className="text-gray-600">Laden...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col h-full bg-gray-50">
-            <ToolHeader title="Ochtend Intentie" onBack={onBack} />
-            <div className="p-4 flex-grow">
-                <div className="bg-green-100 border-2 border-green-400 rounded-xl p-3 mb-4 text-center">
-                    <p className="text-green-800 font-bold">+{new Date().getDay() === 6 ? '40' : '20'} punten! {new Date().getDay() === 6 ? '🔥 2x Wedstrijddag!' : '⭐'}</p>
-                </div>
+            <ToolHeader title="Goedemorgen Start" onBack={onBack} />
+            <div className="p-4 flex-grow overflow-y-auto">
+                {!hasExistingEntry ? (
+                    <div className="bg-green-100 border-2 border-green-400 rounded-xl p-3 mb-4 text-center">
+                        <p className="text-green-800 font-bold">+{new Date().getDay() === 6 ? '60' : '30'} punten! {new Date().getDay() === 6 ? '🔥 2x Wedstrijddag!' : '⭐'}</p>
+                    </div>
+                ) : (
+                    <div className="bg-blue-100 border-2 border-blue-400 rounded-xl p-3 mb-4 text-center">
+                        <p className="text-blue-800 font-bold">✏️ Je hebt dit vandaag al ingevuld. Je kunt het aanpassen!</p>
+                    </div>
+                )}
                 <SliderInput label="Hoe heb je geslapen?" minLabel="Slecht" maxLabel="Heel goed" value={sleep} onChange={(e) => setSleep(e.target.value)} />
                 <TextAreaInput label="Wat is je doel voor vandaag?" placeholder="Eén klein ding..." value={goal} onChange={(e) => setGoal(e.target.value)} />
+                <SliderInput label="Hoe voel je je fysiek?" minLabel="Slecht" maxLabel="Uitstekend" value={physical} onChange={e => setPhysical(e.target.value)} />
+                <SliderInput label="Hoe is je mentale toestand?" minLabel="Overweldigd" maxLabel="Helder" value={mental} onChange={e => setMental(e.target.value)} />
+                <SliderInput label="Hoe is je concentratie?" minLabel="Verstrooid" maxLabel="Gefocust" value={concentration} onChange={e => setConcentration(e.target.value)} />
+                <SliderInput label="Hoeveel controle voel je?" minLabel="Geen" maxLabel="Volledig" value={control} onChange={e => setControl(e.target.value)} />
             </div>
-            <PrimaryButton onClick={handleComplete}>Start de Dag!</PrimaryButton>
+            <PrimaryButton onClick={handleComplete}>
+                {hasExistingEntry ? 'Wijzigingen Opslaan' : 'Start de Dag!'}
+            </PrimaryButton>
         </div>
     );
 };
 const todayChallenge = "Drink vandaag 8 glazen water.";
-const ChallengeScreen = ({ onBack, onComplete, isCompleted }) => {
+const ChallengeScreen = ({ onBack, onComplete, isCompleted, user }) => {
     const { addPoints, trackActivity } = usePoints();
 
-    const handleComplete = () => {
+    const handleComplete = async () => {
         if (!isCompleted) {
             const isMatchDay = new Date().getDay() === 6;
             const basePoints = 25;
@@ -579,6 +833,12 @@ const ChallengeScreen = ({ onBack, onComplete, isCompleted }) => {
 
             addPoints(points, `Dagelijkse Uitdaging${isMatchDay ? ' (Wedstrijddag 2x!)' : ''}`);
             trackActivity('toolbox_uses');
+
+            // Save to database
+            if (user) {
+                await dailyEntryService.saveChallenge(user.id);
+            }
+
             onComplete();
         }
     };
@@ -603,11 +863,11 @@ const ChallengeScreen = ({ onBack, onComplete, isCompleted }) => {
         </div>
     );
 };
-const ThoughtsScreen = ({ onBack, onSave, savedThought }) => {
+const ThoughtsScreen = ({ onBack, onSave, savedThought, user }) => {
     const { addPoints, trackActivity } = usePoints();
     const [text, setText] = useState(savedThought || '');
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (text.trim()) {
             const isMatchDay = new Date().getDay() === 6;
             const basePoints = 15;
@@ -615,6 +875,12 @@ const ThoughtsScreen = ({ onBack, onSave, savedThought }) => {
 
             addPoints(points, `Gedachten Dump${isMatchDay ? ' (Wedstrijddag 2x!)' : ''}`);
             trackActivity('toolbox_uses');
+
+            // Save to database
+            if (user) {
+                await dailyEntryService.saveThoughts(user.id, text);
+            }
+
             onSave(text);
         }
     };
@@ -634,30 +900,34 @@ const ThoughtsScreen = ({ onBack, onSave, savedThought }) => {
 };
 const GratitudeScreen = ({ onBack, onSave, savedGratitude }) => {
     const { addPoints, trackActivity } = usePoints();
-    const [text, setText] = useState(savedGratitude || '');
+    const [gratitudeText, setGratitudeText] = useState(savedGratitude?.gratitude || '');
+    const [proudText, setProudText] = useState(savedGratitude?.proud || '');
+    const [learnedText, setLearnedText] = useState(savedGratitude?.learned || '');
 
     const handleSave = () => {
-        if (text.trim()) {
+        if (gratitudeText.trim() || proudText.trim() || learnedText.trim()) {
             const isMatchDay = new Date().getDay() === 6;
-            const basePoints = 20;
+            const basePoints = 30; // Increased since it combines gratitude + reflection
             const points = isMatchDay ? basePoints * 2 : basePoints;
 
-            addPoints(points, `Dankbaarheidsdagboek${isMatchDay ? ' (Wedstrijddag 2x!)' : ''}`);
+            addPoints(points, `Dag Afsluiting${isMatchDay ? ' (Wedstrijddag 2x!)' : ''}`);
             trackActivity('toolbox_uses');
-            onSave(text);
+            onSave({ gratitude: gratitudeText, proud: proudText, learned: learnedText });
         }
     };
 
     return (
         <div className="flex flex-col h-full bg-gray-50">
-            <ToolHeader title="Dankbaarheidsdagboek" onBack={onBack} />
-            <div className="p-4 flex-grow">
+            <ToolHeader title="Dag Afsluiting" onBack={onBack} />
+            <div className="p-4 flex-grow overflow-y-auto">
                 <div className="bg-green-100 border-2 border-green-400 rounded-xl p-3 mb-4 text-center">
-                    <p className="text-green-800 font-bold">+{new Date().getDay() === 6 ? '40' : '20'} punten! {new Date().getDay() === 6 ? '🔥 2x Wedstrijddag!' : '⭐'}</p>
+                    <p className="text-green-800 font-bold">+{new Date().getDay() === 6 ? '60' : '30'} punten! {new Date().getDay() === 6 ? '🔥 2x Wedstrijddag!' : '⭐'}</p>
                 </div>
-                <TextAreaInput label="Waar ben je dankbaar voor vandaag?" placeholder="Iets kleins of iets groots..." value={text} onChange={(e) => setText(e.target.value)} />
+                <TextAreaInput label="Waar ben je dankbaar voor vandaag?" placeholder="Iets kleins of iets groots..." value={gratitudeText} onChange={(e) => setGratitudeText(e.target.value)} />
+                <TextAreaInput label="Waar ben je trots op vandaag?" placeholder="Wat heb je goed gedaan..." value={proudText} onChange={(e) => setProudText(e.target.value)} />
+                <TextAreaInput label="Wat heb je vandaag geleerd?" placeholder="Over jezelf, anderen of iets nieuws..." value={learnedText} onChange={(e) => setLearnedText(e.target.value)} />
             </div>
-            <PrimaryButton onClick={handleSave}>Bewaren</PrimaryButton>
+            <PrimaryButton onClick={handleSave}>Dag Afsluiten 🌙</PrimaryButton>
         </div>
     );
 };
@@ -696,22 +966,22 @@ const BreathingScreen = ({ onBack }) => {
     }, [isActive]);
 
     return (
-        <div className="flex flex-col h-full bg-gray-50">
+        <div className="flex flex-col min-h-screen bg-gray-50">
             <ToolHeader title="Adem Coach" onBack={onBack} />
-            <div className="flex-grow flex flex-col items-center justify-center p-6 text-center">
-                <div className="bg-green-100 border-2 border-green-400 rounded-xl p-3 mb-4">
-                    <p className="text-green-800 font-bold">+{new Date().getDay() === 6 ? '50' : '25'} punten na 5 cycli! {new Date().getDay() === 6 ? '🔥 2x!' : '⭐'}</p>
+            <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
+                <div className="bg-green-100 border-2 border-green-400 rounded-xl p-3 mb-6 max-w-sm">
+                    <p className="text-green-800 font-bold text-sm">+{new Date().getDay() === 6 ? '50' : '25'} punten na 5 cycli! {new Date().getDay() === 6 ? '🔥 2x!' : '⭐'}</p>
                 </div>
-                <div className="mb-4">
-                    <p className="text-gray-700 font-bold">Cycli: {cycles}/5</p>
+                <div className="mb-6">
+                    <p className="text-gray-700 font-bold text-lg">Cycli: {cycles}/5</p>
                 </div>
-                <div className="relative w-48 h-48 flex items-center justify-center">
+                <div className="relative w-56 h-56 flex items-center justify-center mb-8">
                     {isActive && <div className="absolute w-full h-full bg-red-200 rounded-full animate-pulse"></div>}
-                    <div className="w-40 h-40 bg-white border-4 border-red-500 rounded-full flex items-center justify-center z-0">
-                         <h2 className="text-2xl font-bold text-red-700">{breathingState}</h2>
+                    <div className="w-48 h-48 bg-white border-4 border-red-500 rounded-full flex items-center justify-center z-10 shadow-lg">
+                         <h2 className="text-xl md:text-2xl font-bold text-red-700 px-4">{breathingState}</h2>
                     </div>
                 </div>
-                <button onClick={() => setIsActive(!isActive)} className="mt-8 bg-white py-3 px-8 rounded-full font-bold text-red-700 shadow-md border-2 border-red-600">
+                <button onClick={() => setIsActive(!isActive)} className="bg-red-600 text-white py-4 px-12 rounded-full font-bold shadow-lg hover:bg-red-700 transition-colors">
                     {isActive ? 'Stop' : 'Start'}
                 </button>
             </div>
@@ -785,8 +1055,8 @@ const MatchRitualScreen = ({ onBack, onSave, savedData }) => {
             <ToolHeader title="Wedstrijd Ritueel" onBack={onBack} />
             <div className="p-4 flex-grow overflow-y-auto">
                 <div className="flex justify-center bg-gray-200 rounded-full p-1 mb-6">
-                    <button onClick={() => setPhase('pre')} className={`w-1/2 py-2 rounded-full font-semibold ${phase === 'pre' ? 'bg-white shadow' : ''}`}>Voor de wedstrijd</button>
-                    <button onClick={() => setPhase('post')} className={`w-1/2 py-2 rounded-full font-semibold ${phase === 'post' ? 'bg-white shadow' : ''}`}>Na de wedstrijd</button>
+                    <button onClick={() => setPhase('pre')} className={`w-1/2 py-2 rounded-full font-semibold text-gray-900 ${phase === 'pre' ? 'bg-white shadow' : ''}`}>Voor de wedstrijd</button>
+                    <button onClick={() => setPhase('post')} className={`w-1/2 py-2 rounded-full font-semibold text-gray-900 ${phase === 'post' ? 'bg-white shadow' : ''}`}>Na de wedstrijd</button>
                 </div>
 
                 {phase === 'pre' && (
@@ -806,7 +1076,7 @@ const MatchRitualScreen = ({ onBack, onSave, savedData }) => {
                             <div className="space-y-2">
                                 {missions.map(m => <button key={m} onClick={() => { setMission(m); setIsCustomMission(false); }} className={`w-full text-left p-3 rounded-lg ${mission === m && !isCustomMission ? 'bg-red-100' : 'bg-gray-100'}`}>{m}</button>)}
                                 <button onClick={() => setIsCustomMission(true)} className={`w-full text-left p-3 rounded-lg ${isCustomMission ? 'bg-red-100' : 'bg-gray-100'}`}>Bedenk je eigen missie...</button>
-                                {isCustomMission && <textarea value={customMission} onChange={(e) => setCustomMission(e.target.value)} className="w-full p-2 mt-2 bg-gray-50 border-2 rounded-lg" />}
+                                {isCustomMission && <textarea value={customMission} onChange={(e) => setCustomMission(e.target.value)} className="w-full p-2 mt-2 bg-gray-50 border-2 rounded-lg text-gray-900" placeholder="Typ hier je eigen missie..." />}
                             </div>
                         </div>
                          {/* Visualisatie & Rust */}
@@ -846,7 +1116,7 @@ const MatchRitualScreen = ({ onBack, onSave, savedData }) => {
 
 
 // Wellness App Main Component
-const WellnessAppContent = ({ onBack, onLogout, initialView = 'toolbox' }) => {
+const WellnessAppContent = ({ onBack, onLogout, initialView = 'toolbox', user }) => {
   const [currentView, setCurrentView] = useState(initialView);
   const [dailyData, setDailyData] = useState({});
   const getTodayDateString = () => new Date().toISOString().split('T')[0];
@@ -870,14 +1140,12 @@ const WellnessAppContent = ({ onBack, onLogout, initialView = 'toolbox' }) => {
     switch (currentView) {
       case 'points': return <PointsDashboard onBack={() => setCurrentView('toolbox')} />;
       case 'match_day': return <MatchDay onBack={() => setCurrentView('toolbox')} />;
-      case 'morning': return <MorningCheckinScreen onBack={() => setCurrentView('toolbox')} onComplete={(data) => handleToolCompletion('morning', data)} />;
-      case 'challenge': return <ChallengeScreen onBack={() => setCurrentView('toolbox')} onComplete={() => handleToolCompletion('challenge', true)} isCompleted={!!todayData.challenge} />;
-      case 'thoughts': return <ThoughtsScreen onBack={() => setCurrentView('toolbox')} onSave={(data) => handleToolCompletion('thoughts', data)} savedThought={todayData.thoughts} />;
-      case 'gratitude': return <GratitudeScreen onBack={() => setCurrentView('toolbox')} onSave={(data) => handleToolCompletion('gratitude', data)} savedGratitude={todayData.gratitude} />;
+      case 'journal': return <Journal onBack={() => setCurrentView('toolbox')} user={user} />;
+      case 'morning': return <MorningCheckinScreen onBack={() => setCurrentView('toolbox')} onComplete={(data) => handleToolCompletion('morning', data)} user={user} />;
+      case 'challenge': return <ChallengeScreen onBack={() => setCurrentView('toolbox')} onComplete={() => handleToolCompletion('challenge', true)} isCompleted={!!todayData.challenge} user={user} />;
+      case 'thoughts': return <ThoughtsScreen onBack={() => setCurrentView('toolbox')} onSave={(data) => handleToolCompletion('thoughts', data)} savedThought={todayData.thoughts} user={user} />;
       case 'breathing': return <BreathingScreen onBack={() => setCurrentView('toolbox')} />;
-      case 'full_checkin': return <FullCheckinScreen onBack={() => setCurrentView('toolbox')} onComplete={(data) => handleToolCompletion('full_checkin', data)} />;
-      case 'evening': return <AjaxSleepApp onBack={() => setCurrentView('toolbox')} onLogout={onLogout} />;
-      case 'match_ritual': return <MatchRitualScreen onBack={() => setCurrentView('toolbox')} onSave={(data) => handleToolCompletion('match_ritual', data)} savedData={todayData.match_ritual} />;
+      case 'evening': return <AjaxSleepApp onBack={() => setCurrentView('toolbox')} onLogout={onLogout} user={user} />;
       case 'toolbox':
       default:
         return <ToolboxScreen onSelectTool={setCurrentView} onBack={onBack} onLogout={onLogout} />;
@@ -906,7 +1174,7 @@ const WellnessAppContent = ({ onBack, onLogout, initialView = 'toolbox' }) => {
 
 // Wrapper component with PointsProvider
 const WellnessApp = (props) => (
-  <PointsProvider>
+  <PointsProvider userId={props.user?.id}>
     <WellnessAppContent {...props} />
   </PointsProvider>
 );
@@ -943,15 +1211,47 @@ const App = () => {
         supabase.auth.getSession().then(({ data: { session } }) => {
             setUser(session?.user ?? null);
             setLoading(false);
+
+            // Initialize notifications if user is logged in
+            if (session?.user) {
+                initializeNotifications();
+            }
         });
 
         // Listen for changes on auth state (login, logout, etc.)
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setUser(session?.user ?? null);
+
+            // Initialize notifications on login
+            if (session?.user) {
+                initializeNotifications();
+            }
         });
 
         return () => subscription.unsubscribe();
     }, []);
+
+    const initializeNotifications = async () => {
+        // Register service worker
+        await notificationService.registerServiceWorker();
+
+        // Check if notifications are already enabled
+        if (notificationService.areNotificationsEnabled()) {
+            notificationService.scheduleDailyNotifications();
+        } else {
+            // Ask for permission after a short delay (better UX)
+            setTimeout(async () => {
+                const granted = await notificationService.requestNotificationPermission();
+                if (granted) {
+                    notificationService.scheduleDailyNotifications();
+                    // Send test notification to confirm it works
+                    setTimeout(() => {
+                        notificationService.sendTestNotification();
+                    }, 1000);
+                }
+            }, 2000);
+        }
+    };
 
     const handleLogin = (loggedInUser) => {
         setUser(loggedInUser);
@@ -988,15 +1288,15 @@ const App = () => {
     }
 
     if (activeApp === 'sleep') {
-        return <AjaxSleepApp onBack={() => setActiveApp(null)} onLogout={handleLogout} />;
+        return <AjaxSleepApp onBack={() => setActiveApp(null)} onLogout={handleLogout} user={user} />;
     }
 
     if (activeApp === 'wellness') {
-        return <WellnessApp onBack={() => setActiveApp(null)} onLogout={handleLogout} initialView={initialWellnessView} />;
+        return <WellnessApp onBack={() => setActiveApp(null)} onLogout={handleLogout} initialView={initialWellnessView} user={user} />;
     }
 
     // Direct naar wellness toolbox (alles in 1 overzicht)
-    return <WellnessApp onBack={() => setActiveApp(null)} onLogout={handleLogout} initialView="toolbox" />;
+    return <WellnessApp onBack={() => setActiveApp(null)} onLogout={handleLogout} initialView="toolbox" user={user} />;
 };
 
 export default App;

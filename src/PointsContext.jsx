@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getUserPoints, savePointsDebounced } from './pointsService';
 
 const PointsContext = createContext();
 
@@ -36,7 +37,7 @@ const ACHIEVEMENTS = {
   streak_30: { id: 'streak_30', name: 'Maand Legende', description: '30 dagen streak', icon: '👑', points: 300, target: 30 },
 };
 
-export const PointsProvider = ({ children }) => {
+export const PointsProvider = ({ children, userId = null }) => {
   const [totalPoints, setTotalPoints] = useState(0);
   const [weeklyPoints, setWeeklyPoints] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
@@ -52,29 +53,59 @@ export const PointsProvider = ({ children }) => {
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [showAchievement, setShowAchievement] = useState(null);
   const [newLevel, setNewLevel] = useState(null);
+  const [isLoadingFromDb, setIsLoadingFromDb] = useState(true); // Start as true to prevent initial save
+  const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
 
-  // Load from localStorage
+  // Load from database when user logs in
   useEffect(() => {
-    const saved = localStorage.getItem('ajaxPoints');
-    if (saved) {
-      const data = JSON.parse(saved);
-      setTotalPoints(data.totalPoints || 0);
-      setWeeklyPoints(data.weeklyPoints || 0);
-      setCurrentStreak(data.currentStreak || 0);
-      setUnlockedAchievements(data.unlockedAchievements || []);
-      setActivityCounts(data.activityCounts || {
-        early_bird: 0,
-        quotes_read: 0,
-        match_rituals: 0,
-        breathing_sessions: 0,
-        toolbox_uses: 0,
-        perfect_preps: 0,
+    if (userId) {
+      setIsLoadingFromDb(true);
+      getUserPoints(userId).then(dbData => {
+        if (dbData) {
+          setTotalPoints(dbData.total_points || 0);
+          setWeeklyPoints(dbData.weekly_points || 0);
+          setCurrentStreak(dbData.current_streak || 0);
+          setUnlockedAchievements(dbData.unlocked_achievements || []);
+          setActivityCounts(dbData.activity_counts || {
+            early_bird: 0,
+            quotes_read: 0,
+            match_rituals: 0,
+            breathing_sessions: 0,
+            toolbox_uses: 0,
+            perfect_preps: 0,
+          });
+        }
+        setIsLoadingFromDb(false);
+        setHasLoadedInitialData(true);
       });
+    } else {
+      // Fallback to localStorage if no user
+      const saved = localStorage.getItem('ajaxPoints');
+      if (saved) {
+        const data = JSON.parse(saved);
+        setTotalPoints(data.totalPoints || 0);
+        setWeeklyPoints(data.weeklyPoints || 0);
+        setCurrentStreak(data.currentStreak || 0);
+        setUnlockedAchievements(data.unlockedAchievements || []);
+        setActivityCounts(data.activityCounts || {
+          early_bird: 0,
+          quotes_read: 0,
+          match_rituals: 0,
+          breathing_sessions: 0,
+          toolbox_uses: 0,
+          perfect_preps: 0,
+        });
+      }
+      setIsLoadingFromDb(false);
+      setHasLoadedInitialData(true);
     }
-  }, []);
+  }, [userId]);
 
-  // Save to localStorage
+  // Save to database and localStorage
   useEffect(() => {
+    // Skip saving during initial load from database
+    if (isLoadingFromDb || !hasLoadedInitialData) return;
+
     const data = {
       totalPoints,
       weeklyPoints,
@@ -82,8 +113,15 @@ export const PointsProvider = ({ children }) => {
       unlockedAchievements,
       activityCounts,
     };
+
+    // Always save to localStorage as backup
     localStorage.setItem('ajaxPoints', JSON.stringify(data));
-  }, [totalPoints, weeklyPoints, currentStreak, unlockedAchievements, activityCounts]);
+
+    // Save to database if user is logged in
+    if (userId) {
+      savePointsDebounced(userId, data);
+    }
+  }, [totalPoints, weeklyPoints, currentStreak, unlockedAchievements, activityCounts, userId, isLoadingFromDb, hasLoadedInitialData]);
 
   // Get current level
   const getCurrentLevel = () => {
