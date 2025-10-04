@@ -2,6 +2,9 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { ShieldCheck, Sun, Zap, Brain, Star, Wind, Moon, BarChart3, CheckCircle, Circle, Play, Pause, Award, Target, Home, Calendar, Volume2, Settings, ArrowRight, ArrowLeft, Plus, Trash2, User, Trophy, BarChart2, BookOpen, LogOut, Lightbulb, ThumbsUp, BrainCircuit, Pin, FileText, ArrowUpRight, ClipboardList } from 'lucide-react';
 import LoginScreen from './LoginScreen';
 import { supabase } from './supabaseClient';
+import { PointsProvider, usePoints } from './PointsContext';
+import { LevelUpModal, AchievementModal } from './components/AchievementModals';
+import PointsDashboard from './components/PointsDashboard';
 
 // === MODAL COMPONENTS ===
 const RewardModal = ({ show, rewardType, onClose, weeklyRewards }) => {
@@ -51,7 +54,8 @@ const DribbelInputModal = ({ show, onClose, onSubmit, dareValue, onDareChange, t
 
 // === App 1: Ajax Sleep App (Standalone Version) ===
 
-const AjaxSleepApp = ({ onBack, onLogout }) => {
+const AjaxSleepAppContent = ({ onBack, onLogout }) => {
+  const points = usePoints();
   const [currentView, setCurrentView] = useState('home');
   const [parentMode, setParentMode] = useState(false);
   const [dailyGoals, setDailyGoals] = useState(0);
