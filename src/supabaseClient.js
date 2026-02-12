@@ -1,21 +1,107 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Hardcoded Supabase credentials for production reliability
-const supabaseUrl = 'https://gdtqrpkoocyqoeikwumq.supabase.co'
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkdHFycGtvb2N5cW9laWt3dW1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk1MTQzNTYsImV4cCI6MjA3NTA5MDM1Nn0.R8XnzTW2upcPiAEpkm3bHCM6ZjquOf-y87o7ZhWpe1M'
+// Get Supabase credentials from environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-console.log('Supabase URL:', supabaseUrl)
-console.log('Supabase Key length:', supabaseAnonKey.length)
-
-// Validate that we have valid credentials
-if (!supabaseUrl || !supabaseUrl.startsWith('https://')) {
-  console.error('Invalid Supabase URL:', supabaseUrl)
-  throw new Error('Invalid Supabase URL configuration')
+// Validate environment variables
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase environment variables')
+  console.error('Make sure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in .env.local')
 }
 
-if (!supabaseAnonKey || supabaseAnonKey.length < 20) {
-  console.error('Invalid Supabase Key')
-  throw new Error('Invalid Supabase Key configuration')
+// Create Supabase client with proper configuration
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    // Store session in localStorage for persistence
+    storage: window.localStorage,
+    // Auto refresh tokens before they expire
+    autoRefreshToken: true,
+    // Persist session across page reloads
+    persistSession: true,
+    // Detect session from URL on OAuth callbacks
+    detectSessionInUrl: true,
+    // Flow type for authentication
+    flowType: 'pkce'
+  },
+  // Global settings
+  global: {
+    headers: {
+      'X-Client-Info': 'ajax-performance-suite@1.0.0'
+    }
+  },
+  // Database settings
+  db: {
+    schema: 'public'
+  },
+  // Realtime settings (can be enabled if needed)
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
+  }
+})
+
+// Helper function to get current user
+export const getCurrentUser = async () => {
+  const { data: { user }, error } = await supabase.auth.getUser()
+  if (error) {
+    console.error('Error getting current user:', error)
+    return null
+  }
+  return user
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Helper function to check if user is authenticated
+export const isAuthenticated = async () => {
+  const { data: { session } } = await supabase.auth.getSession()
+  return !!session
+}
+
+// Helper function to sign out
+export const signOut = async () => {
+  const { error } = await supabase.auth.signOut()
+  if (error) {
+    console.error('Error signing out:', error)
+    throw error
+  }
+}
+
+// Export auth helpers for easy access
+export const auth = {
+  signIn: async (email, password) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    })
+    if (error) throw error
+    return data
+  },
+
+  signUp: async (email, password) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password
+    })
+    if (error) throw error
+    return data
+  },
+
+  signOut,
+
+  getSession: async () => {
+    const { data: { session }, error } = await supabase.auth.getSession()
+    if (error) throw error
+    return session
+  },
+
+  getUser: getCurrentUser,
+
+  isAuthenticated,
+
+  onAuthStateChange: (callback) => {
+    return supabase.auth.onAuthStateChange(callback)
+  }
+}
+
+console.log('Supabase client initialized with URL:', supabaseUrl)

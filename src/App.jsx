@@ -1,95 +1,15 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { ShieldCheck, Sun, Zap, Brain, Star, Wind, Moon, BarChart3, CheckCircle, Circle, Play, Pause, Award, Target, Home, Calendar, Volume2, Settings, ArrowRight, ArrowLeft, Plus, Trash2, User, Trophy, BarChart2, BookOpen, LogOut, Lightbulb, ThumbsUp, BrainCircuit, Pin, FileText, ArrowUpRight, ClipboardList } from 'lucide-react';
-import LoginScreen from './LoginScreen';
-import { supabase } from './supabaseClient';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
+import { ShieldCheck, Sun, Zap, Brain, Star, Wind, Moon, BarChart3, CheckCircle, Circle, Play, Pause, Award, Target, Home, Calendar, Volume2, Settings, ArrowRight, ArrowLeft, Plus, Trash2, User, Trophy, BarChart2, BookOpen, LogOut, Lightbulb, ThumbsUp, BrainCircuit, Pin, FileText, ArrowUpRight, ClipboardList, TrendingUp } from 'lucide-react';
 import { PointsProvider, usePoints } from './PointsContext';
+import { useAuth } from './contexts/AuthContext';
 import { LevelUpModal, AchievementModal } from './components/AchievementModals';
+import { RewardModal, DribbelInputModal, GratitudeInputModal } from './components/modals';
 import PointsDashboard from './components/PointsDashboard';
 import MatchDay from './components/MatchDay';
 import Journal from './components/Journal';
 import * as dailyEntryService from './dailyEntryService';
 import * as notificationService from './notificationService';
-
-// === MODAL COMPONENTS ===
-const RewardModal = ({ show, rewardType, onClose, weeklyRewards }) => {
-  if (!show || !rewardType) return null;
-  const reward = weeklyRewards[rewardType];
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-      <div className="bg-white rounded-3xl p-8 text-center max-w-sm mx-4 animate-bounce">
-        <div className="text-8xl mb-4">{reward.icon}</div>
-        <h2 className="text-2xl font-bold text-red-600 mb-2">{reward.title}</h2>
-        <p className="text-gray-700 mb-6">{reward.message}</p>
-        <button onClick={onClose} className="bg-red-600 text-white px-6 py-3 rounded-full font-bold">Super!</button>
-      </div>
-    </div>
-  );
-};
-
-const DribbelInputModal = ({ show, onClose, onSubmit, dareValue, onDareChange, tryValue, onTryChange }) => {
-  if (!show) return null;
-  const isButtonDisabled = !dareValue.trim() || !tryValue.trim();
-  return (
-      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-sm">
-              <h2 className="text-xl font-bold text-red-700 mb-4">Pyjama-Dribbel ✎</h2>
-              <div className="space-y-4">
-                  <div>
-                      <label className="block font-semibold text-gray-700 mb-1">Vandaag durfde ik...</label>
-                      <textarea value={dareValue} onChange={onDareChange} rows="3" className="w-full p-2 border-2 border-gray-200 rounded-lg text-gray-900" placeholder="...iets te vragen in de klas."></textarea>
-                  </div>
-                  <div>
-                      <label className="block font-semibold text-gray-700 mb-1">Morgen ga ik proberen...</label>
-                      <textarea value={tryValue} onChange={onTryChange} rows="3" className="w-full p-2 border-2 border-gray-200 rounded-lg text-gray-900" placeholder="...een nieuw recept uit te proberen."></textarea>
-                  </div>
-              </div>
-              <div className="mt-6 flex flex-col gap-2">
-                  <button onClick={onSubmit} disabled={isButtonDisabled} className={`w-full text-white font-bold py-3 rounded-full ${isButtonDisabled ? 'bg-gray-400' : 'bg-red-600'}`}>
-                      Voltooi Missie (+1 goal)
-                  </button>
-                  <button onClick={onClose} className="w-full text-gray-600 font-bold py-2">
-                      Annuleren
-                  </button>
-              </div>
-          </div>
-      </div>
-  );
-};
-
-const GratitudeInputModal = ({ show, onClose, onSubmit, value1, onChange1, value2, onChange2, value3, onChange3 }) => {
-  if (!show) return null;
-  const isButtonDisabled = !value1.trim() || !value2.trim() || !value3.trim();
-  return (
-      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-sm">
-              <h2 className="text-xl font-bold text-red-700 mb-4">Dankbaarheid ⭐</h2>
-              <p className="text-sm text-gray-600 mb-4">Schrijf 3 dingen waar je vandaag dankbaar voor bent:</p>
-              <div className="space-y-3">
-                  <div>
-                      <label className="block font-semibold text-gray-700 mb-1">1. Ik ben dankbaar voor...</label>
-                      <input type="text" value={value1} onChange={onChange1} className="w-full p-3 border-2 border-gray-200 rounded-lg text-gray-900" placeholder="...mijn familie"></input>
-                  </div>
-                  <div>
-                      <label className="block font-semibold text-gray-700 mb-1">2. Ik ben dankbaar voor...</label>
-                      <input type="text" value={value2} onChange={onChange2} className="w-full p-3 border-2 border-gray-200 rounded-lg text-gray-900" placeholder="...mijn vrienden"></input>
-                  </div>
-                  <div>
-                      <label className="block font-semibold text-gray-700 mb-1">3. Ik ben dankbaar voor...</label>
-                      <input type="text" value={value3} onChange={onChange3} className="w-full p-3 border-2 border-gray-200 rounded-lg text-gray-900" placeholder="...voetbal kunnen spelen"></input>
-                  </div>
-              </div>
-              <div className="mt-6 flex flex-col gap-2">
-                  <button onClick={onSubmit} disabled={isButtonDisabled} className={`w-full text-white font-bold py-3 rounded-full ${isButtonDisabled ? 'bg-gray-400' : 'bg-red-600'}`}>
-                      Voltooi Missie (+1 goal)
-                  </button>
-                  <button onClick={onClose} className="w-full text-gray-600 font-bold py-2">
-                      Annuleren
-                  </button>
-              </div>
-          </div>
-      </div>
-  );
-};
 
 // === App 1: Ajax Sleep App (Standalone Version) ===
 
@@ -236,58 +156,54 @@ const AjaxSleepAppContent = ({ onBack, onLogout, user }) => {
   };
 
     const HomeScreen = () => (
-    <div className="bg-gradient-to-b from-red-700 to-red-900 min-h-screen text-white">
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-4">
-           <button onClick={onBack} className="bg-white bg-opacity-20 p-2 rounded-full"><Home className="w-6 h-6" /></button>
-          <h1 className="text-2xl font-bold">Avondritueel</h1>
-          <button onClick={onLogout} className="bg-white bg-opacity-20 p-2 rounded-full"><LogOut className="w-6 h-6" /></button>
-        </div>
-
-        {/* Points & Level Display */}
-        <div className="flex gap-2 mb-4">
-          <button
-            onClick={() => setCurrentView('points')}
-            className="flex-1 bg-white bg-opacity-10 rounded-xl p-3 flex items-center justify-between hover:bg-opacity-20 transition-colors"
-          >
-            <div className="flex items-center space-x-2">
-              <div className={`text-2xl bg-gradient-to-br ${points.currentLevel.color} w-10 h-10 rounded-full flex items-center justify-center`}>
-                {points.currentLevel.badge}
-              </div>
-              <div className="text-left">
-                <p className="text-xs opacity-75">Level {points.currentLevel.id}</p>
-                <p className="font-bold text-sm">{points.currentLevel.name}</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-xs opacity-75">Punten</p>
-              <p className="font-bold text-lg">{points.totalPoints}</p>
-            </div>
+    <div className="min-h-screen bg-white">
+      {/* Clean Header */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="px-6 py-4 flex justify-between items-center">
+          <h1 className="text-xl font-semibold text-gray-900">Avondritueel</h1>
+          <button onClick={onLogout} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <LogOut className="w-5 h-5 text-gray-600" />
           </button>
         </div>
+      </div>
 
-        {/* Johan Cruijff Quote */}
-        <div className="bg-white bg-opacity-10 rounded-2xl p-4 mb-6 border-2 border-white border-opacity-20">
-          <p className="text-xs font-semibold mb-1 opacity-75">💬 Johan Cruijff zegt:</p>
-          <p className="text-sm italic font-medium">"{dailyQuote}"</p>
-        </div>
-        <div className="text-center mb-8">
-          <div className={`w-32 h-32 bg-gradient-to-br ${outfits[selectedOutfit].colors} rounded-full mx-auto mb-4 flex items-center justify-center relative border-4 border-white shadow-2xl`}>
-            <div className="text-6xl">{ajaxPlayers[selectedPlayer].emoji}</div>
-            <div className="absolute -bottom-2 -right-2 bg-white text-black px-2 py-1 rounded-full text-xs font-bold">#{ajaxPlayers[selectedPlayer].number}</div>
+      <div className="px-6 py-8">
+        {/* Simple Profile */}
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
+            <span className="text-3xl">⚽</span>
           </div>
-          <h2 className="text-xl font-bold mb-1">{playerName}</h2>
-          <p className="text-sm opacity-90 mb-2">speelt als {ajaxPlayers[selectedPlayer].name}</p>
-        </div>
-        <div className="bg-white bg-opacity-10 rounded-3xl p-6 mb-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-bold">Vandaag</h3>
-            <div className="flex items-center"><Trophy className="w-5 h-5 mr-1" /><span className="font-bold">{dailyGoals.toFixed(1)}/9.5 goals</span></div>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">{playerName}</h2>
+            <p className="text-sm text-gray-500">{points.totalPoints} punten</p>
           </div>
-          <div className="bg-white bg-opacity-20 rounded-full h-4 mb-2"><div className="bg-green-400 h-4 rounded-full" style={{ width: `${Math.min((dailyGoals / 9.5) * 100, 100)}%` }}></div></div>
         </div>
-        <div className="space-y-4">
-            <button onClick={() => setCurrentView('missions')} className="w-full bg-white text-red-700 py-4 px-6 rounded-full font-bold text-lg flex items-center justify-center shadow-lg"><Play className="w-6 h-6 mr-2" />Start Missies!</button>
+
+        {/* Clean Progress Card */}
+        <div className="bg-gray-50 rounded-2xl p-6 mb-6">
+          <div className="flex justify-between items-baseline mb-3">
+            <span className="text-sm font-medium text-gray-600">Vandaag</span>
+            <span className="text-2xl font-bold text-gray-900">{dailyGoals.toFixed(1)}<span className="text-lg text-gray-400">/9.5</span></span>
+          </div>
+          <div className="bg-gray-200 rounded-full h-2">
+            <div
+              className="bg-red-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${Math.min((dailyGoals / 9.5) * 100, 100)}%` }}
+            ></div>
+          </div>
+        </div>
+
+        {/* Simple CTA Button */}
+        <button
+          onClick={() => setCurrentView('missions')}
+          className="w-full bg-red-600 text-white py-4 rounded-xl font-semibold text-base hover:bg-red-700 transition-colors shadow-sm"
+        >
+          Start Missies
+        </button>
+
+        {/* Minimal Quote - Bottom */}
+        <div className="mt-8 pt-6 border-t border-gray-100">
+          <p className="text-sm text-gray-500 italic text-center">"{dailyQuote}"</p>
         </div>
       </div>
     </div>
@@ -327,32 +243,40 @@ const AjaxSleepAppContent = ({ onBack, onLogout, user }) => {
       };
 
       return (
-        <div className="bg-gradient-to-b from-gray-100 to-gray-200 min-h-screen text-gray-800">
-          <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-              <button onClick={() => setCurrentView('home')} className="p-2 bg-white shadow-md rounded-full"><Home className="w-6 h-6 text-red-600" /></button>
-              <h1 className="text-2xl font-bold text-red-700">Dagelijkse Missies</h1>
-              <div className="p-2"><Volume2 className="w-6 h-6" /></div>
+        <div className="min-h-screen bg-white">
+          {/* Clean Header */}
+          <div className="bg-white border-b border-gray-100">
+            <div className="px-6 py-4 flex justify-between items-center">
+              <button onClick={() => setCurrentView('home')} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <Home className="w-5 h-5 text-gray-600" />
+              </button>
+              <h1 className="text-xl font-semibold text-gray-900">Missies</h1>
+              <div className="w-9"></div>
             </div>
+          </div>
+
+          <div className="px-6 py-6">
             <div className="space-y-3">
               {missions.map((mission) => (
-                <div key={mission.id} className={`p-4 rounded-2xl transition-all duration-300 shadow-md ${completedMissions[mission.id] ? 'bg-red-700 text-white' : 'bg-white'}`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="text-4xl">{mission.icon}</div>
-                      <div>
-                        <div className="flex items-baseline space-x-2">
-                            <h3 className="font-bold text-lg">{mission.name}</h3>
-                            <p className={`text-xs font-semibold ${completedMissions[mission.id] ? 'text-white' : 'text-gray-500'}`}>{mission.time}</p>
-                        </div>
-                        <p className={`text-sm ${completedMissions[mission.id] ? 'opacity-90' : 'text-gray-600'}`}>{mission.description}</p>
-                        {mission.points && (
-                          <div className={`inline-flex items-center space-x-1 mt-1 px-2 py-1 rounded-full text-xs font-bold ${completedMissions[mission.id] ? 'bg-white bg-opacity-20 text-white' : 'bg-green-100 text-green-700'}`}>
-                            <Star className="w-3 h-3" fill={completedMissions[mission.id] ? 'white' : 'currentColor'} />
-                            <span>{mission.points} punten</span>
-                          </div>
-                        )}
+                <div
+                  key={mission.id}
+                  className={`p-4 rounded-xl border transition-all ${
+                    completedMissions[mission.id]
+                      ? 'bg-red-50 border-red-200'
+                      : 'bg-white border-gray-200'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-baseline gap-2 mb-1">
+                        <h3 className={`font-semibold ${completedMissions[mission.id] ? 'text-red-900' : 'text-gray-900'}`}>
+                          {mission.name}
+                        </h3>
+                        <span className="text-xs text-gray-400">{mission.time}</span>
                       </div>
+                      <p className={`text-sm ${completedMissions[mission.id] ? 'text-red-700' : 'text-gray-600'}`}>
+                        {mission.description}
+                      </p>
                     </div>
                     <button
                       onClick={() => {
@@ -361,8 +285,17 @@ const AjaxSleepAppContent = ({ onBack, onLogout, user }) => {
                         else completeMission(mission.id);
                       }}
                       disabled={completedMissions[mission.id]}
-                      className={`p-3 rounded-full transition-transform transform hover:scale-110 ${completedMissions[mission.id] ? 'bg-white text-red-700' : 'bg-gray-200 text-gray-700'}`}>
-                      {completedMissions[mission.id] ? <CheckCircle className="w-8 h-8" /> : <Circle className="w-8 h-8" />}
+                      className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                        completedMissions[mission.id]
+                          ? 'bg-red-600 text-white'
+                          : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                      }`}
+                    >
+                      {completedMissions[mission.id] ? (
+                        <CheckCircle className="w-5 h-5" />
+                      ) : (
+                        <Circle className="w-5 h-5" />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -372,9 +305,8 @@ const AjaxSleepAppContent = ({ onBack, onLogout, user }) => {
             {hasCompletedAny && (
               <button
                 onClick={handleFinish}
-                className="w-full mt-6 bg-red-600 text-white font-bold py-4 px-6 rounded-full text-lg shadow-lg hover:bg-red-700 transition-colors flex items-center justify-center"
+                className="w-full mt-6 bg-red-600 text-white py-4 rounded-xl font-semibold hover:bg-red-700 transition-colors"
               >
-                <Moon className="w-6 h-6 mr-2" />
                 Dag Afsluiten
               </button>
             )}
@@ -604,7 +536,7 @@ const PrimaryButton = ({ onClick, children, disabled=false }) => (
     </div>
 );
 
-// Tool Screens
+// Tool Screens - Wereldklasse Edition
 const ToolboxScreen = ({ onSelectTool, onBack, onLogout }) => {
     const { totalPoints, currentLevel } = usePoints();
     const isMatchDay = new Date().getDay() === 6;
@@ -629,100 +561,110 @@ const ToolboxScreen = ({ onSelectTool, onBack, onLogout }) => {
     });
 
     const tools = [
-        { id: 'morning', icon: Sun, title: "Goedemorgen Start" },
-        { id: 'challenge', icon: Zap, title: "Dagelijkse Uitdaging" },
-        { id: 'thoughts', icon: Brain, title: "Gedachten Dump" },
-        { id: 'breathing', icon: Wind, title: "Adem Coach" },
-        { id: 'evening', icon: Moon, title: "Avondritueel" },
-        { id: 'journal', icon: BookOpen, title: "Mijn Dagboek" },
+        { id: 'morning', icon: Sun, title: "Morgen Kick-Off", gradient: "from-yellow-400 to-orange-500" },
+        { id: 'challenge', icon: Zap, title: "Missie van de Dag", gradient: "from-blue-400 to-blue-600" },
+        { id: 'thoughts', icon: Brain, title: "Gedachten Dump", gradient: "from-purple-400 to-purple-600" },
+        { id: 'breathing', icon: Wind, title: "Krachtoefening", gradient: "from-cyan-400 to-teal-500" },
+        { id: 'evening', icon: Moon, title: "Avondritueel", gradient: "from-indigo-400 to-indigo-600" },
+        { id: 'journal', icon: BookOpen, title: "Kampioenen Logboek", gradient: "from-pink-400 to-rose-500" },
     ];
 
+    const container = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1
+            }
+        }
+    };
+
+    const item = {
+        hidden: { y: 20, opacity: 0 },
+        show: { y: 0, opacity: 1 }
+    };
+
     return (
-        <div className="p-4 bg-gray-100 min-h-screen">
-             <div className="flex justify-between items-center mb-4">
-                <h1 className="text-2xl md:text-3xl font-bold flex-1">AJAX 🧰</h1>
-                <button onClick={onLogout} className="p-2 rounded-full bg-white shadow-md ml-2"><LogOut className="text-red-600" size={20}/></button>
-            </div>
-
-            {/* Points & Level Card - Clickable */}
-            <button
-                onClick={() => onSelectTool('points')}
-                className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white rounded-2xl p-4 mb-4 shadow-lg hover:shadow-xl transition-all active:scale-95"
-            >
-                <div className="flex items-center justify-between">
-                    <div className="text-left">
-                        <p className="text-sm opacity-90">Jouw Level</p>
-                        <h2 className="text-2xl font-bold">{currentLevel.name}</h2>
-                    </div>
-                    <div className="text-right">
-                        <p className="text-4xl font-black">{currentLevel.badge}</p>
-                        <p className="text-sm opacity-90 mt-1">{totalPoints} punten</p>
-                    </div>
-                </div>
-                <div className="mt-2 flex items-center justify-center space-x-1 text-xs opacity-75">
-                    <Trophy size={14} />
-                    <span>Tap voor meer details</span>
-                </div>
-            </button>
-
-            {/* Daily Quote */}
-            <div className="bg-white rounded-2xl p-4 mb-4 shadow-md">
-                <p className="text-xs font-semibold mb-2 text-gray-600">⚽ {dailyQuote.player}</p>
-                <p className="text-sm italic font-medium mb-2 text-gray-800">"{dailyQuote.quote}"</p>
-                <div className="flex items-start space-x-2 bg-gray-50 rounded-lg p-3">
-                    <span className="text-base">👉</span>
-                    <p className="text-xs font-semibold text-gray-700">{dailyQuote.lesson}</p>
-                </div>
-            </div>
-
-            {/* Match Day Special Button */}
-            <button
-                onClick={() => onSelectTool('match_day')}
-                className={`w-full mb-4 p-6 rounded-3xl font-bold flex items-center justify-between shadow-xl transition-all ${
-                    isMatchDay
-                        ? 'bg-gradient-to-r from-red-600 to-red-800 text-white animate-pulse'
-                        : 'bg-gradient-to-r from-gray-500 to-gray-700 text-white'
-                }`}
-            >
-                <div className="flex items-center gap-4">
-                    <div className="text-5xl">⚽</div>
-                    <div className="text-left">
-                        <div className="text-2xl font-black">
-                            {isMatchDay ? 'WEDSTRIJDDAG!' : 'Wedstrijddag'}
-                        </div>
-                        <div className="text-sm opacity-90">
-                            {isMatchDay ? '🔥 ALLE PUNTEN 2X VANDAAG!' : 'Alleen op zaterdag'}
-                        </div>
-                    </div>
-                </div>
-                <div className="text-4xl">{isMatchDay ? '🏆' : '📅'}</div>
-            </button>
-
-            {isMatchDay && (
-                <div className="bg-yellow-100 border-2 border-yellow-400 rounded-2xl p-4 mb-4 text-center">
-                    <p className="text-yellow-900 font-bold text-lg">🎯 BONUS ALERT!</p>
-                    <p className="text-yellow-800 text-sm mt-1">Alle tools geven vandaag DUBBELE punten! 2️⃣✖️</p>
-                </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-3">
-                {tools.map((tool, index) => (
+        <div className="min-h-screen bg-white">
+            {/* Clean Header */}
+            <div className="bg-white border-b border-gray-100">
+                <div className="px-6 py-4 flex justify-between items-center">
+                    <h1 className="text-xl font-semibold text-gray-900">Champions Academy</h1>
                     <button
-                        key={tool.id}
-                        onClick={() => onSelectTool(tool.id)}
-                        className={`p-3 rounded-2xl font-bold flex flex-col items-center justify-center min-h-[120px] shadow-md active:scale-95 transition-transform relative ${
-                            index % 3 === 0 ? 'bg-red-600 text-white' : 'bg-white text-gray-800'
-                        }`}
+                        onClick={onLogout}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        aria-label="Uitloggen"
                     >
-                        {isMatchDay && (
-                            <div className="absolute top-1 right-1 bg-yellow-400 text-yellow-900 text-xs px-1.5 py-0.5 rounded-full font-black">
-                                2x
-                            </div>
-                        )}
-                        <tool.icon size={28} className={`mb-2 ${index % 3 === 0 ? 'text-white' : 'text-red-600'}`} />
-                        <span className="text-center text-xs leading-tight">{tool.title}</span>
+                        <LogOut className="w-5 h-5 text-gray-600" />
                     </button>
-                ))}
+                </div>
+            </div>
+
+            <div className="px-6 py-6">
+                {/* Simple Level Card */}
+                <button
+                    onClick={() => onSelectTool('points')}
+                    className="w-full bg-gray-50 rounded-xl p-4 mb-6 text-left hover:bg-gray-100 transition-colors"
+                >
+                    <div className="flex items-center justify-between mb-2">
+                        <div>
+                            <p className="text-sm text-gray-500 mb-1">{currentLevel.name}</p>
+                            <p className="text-2xl font-bold text-gray-900">{totalPoints} <span className="text-sm text-gray-500">punten</span></p>
+                        </div>
+                        <div className="text-3xl">{currentLevel.badge}</div>
+                    </div>
+                    <div className="bg-gray-200 rounded-full h-2">
+                        <div
+                            className="bg-red-600 h-2 rounded-full transition-all"
+                            style={{ width: `${(totalPoints / (currentLevel.nextLevelThreshold || 100)) * 100}%` }}
+                        />
+                    </div>
+                </button>
+
+                {/* Match Day Button (only if match day) */}
+                {isMatchDay && (
+                    <div className="bg-red-600 text-white rounded-xl p-4 mb-6">
+                        <button
+                            onClick={() => onSelectTool('match_day')}
+                            className="w-full text-left"
+                        >
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <div className="font-bold text-lg mb-1">Wedstrijddag</div>
+                                    <div className="text-sm opacity-90">Dubbele punten vandaag</div>
+                                </div>
+                                <div className="text-3xl">⚽</div>
+                            </div>
+                        </button>
+                    </div>
+                )}
+
+                {/* Clean Tools Grid */}
+                <div className="grid grid-cols-2 gap-3">
+                    {tools.map((tool) => {
+                        const IconComponent = tool.icon;
+                        return (
+                            <button
+                                key={tool.id}
+                                onClick={() => onSelectTool(tool.id)}
+                                className="bg-white border border-gray-200 rounded-xl p-4 hover:border-gray-300 hover:shadow-sm transition-all text-left"
+                            >
+                                <div className="flex flex-col h-full">
+                                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mb-3">
+                                        <IconComponent size={20} className="text-gray-700" />
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-900 leading-tight">{tool.title}</span>
+                                </div>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Simple Quote at Bottom */}
+                <div className="mt-8 pt-6 border-t border-gray-100">
+                    <p className="text-sm text-gray-500 italic text-center">"{dailyQuote.quote}"</p>
+                    <p className="text-xs text-gray-400 text-center mt-1">— {dailyQuote.player}</p>
+                </div>
             </div>
         </div>
     );
@@ -770,7 +712,7 @@ const MorningCheckinScreen = ({ onBack, onComplete, user }) => {
             const basePoints = 30;
             const points = isMatchDay ? basePoints * 2 : basePoints;
 
-            addPoints(points, `Goedemorgen Start${isMatchDay ? ' (Wedstrijddag 2x!)' : ''}`);
+            addPoints(points, `Morgen Kick-Off${isMatchDay ? ' (Wedstrijddag 2x!)' : ''}`);
             trackActivity('toolbox_uses');
         }
 
@@ -797,7 +739,7 @@ const MorningCheckinScreen = ({ onBack, onComplete, user }) => {
 
     return (
         <div className="flex flex-col h-full bg-gray-50">
-            <ToolHeader title="Goedemorgen Start" onBack={onBack} />
+            <ToolHeader title="Morgen Kick-Off" onBack={onBack} />
             <div className="p-4 flex-grow overflow-y-auto">
                 {!hasExistingEntry ? (
                     <div className="bg-green-100 border-2 border-green-400 rounded-xl p-3 mb-4 text-center">
@@ -831,7 +773,7 @@ const ChallengeScreen = ({ onBack, onComplete, isCompleted, user }) => {
             const basePoints = 25;
             const points = isMatchDay ? basePoints * 2 : basePoints;
 
-            addPoints(points, `Dagelijkse Uitdaging${isMatchDay ? ' (Wedstrijddag 2x!)' : ''}`);
+            addPoints(points, `Missie van de Dag${isMatchDay ? ' (Wedstrijddag 2x!)' : ''}`);
             trackActivity('toolbox_uses');
 
             // Save to database
@@ -845,7 +787,7 @@ const ChallengeScreen = ({ onBack, onComplete, isCompleted, user }) => {
 
     return (
         <div className="flex flex-col h-full bg-gray-50">
-            <ToolHeader title="Dagelijkse Uitdaging" onBack={onBack} />
+            <ToolHeader title="Missie van de Dag" onBack={onBack} />
             <div className="p-6 text-center flex-grow flex flex-col items-center justify-center">
                 {!isCompleted && (
                     <div className="bg-green-100 border-2 border-green-400 rounded-xl p-3 mb-4">
@@ -967,7 +909,7 @@ const BreathingScreen = ({ onBack }) => {
 
     return (
         <div className="flex flex-col min-h-screen bg-gray-50">
-            <ToolHeader title="Adem Coach" onBack={onBack} />
+            <ToolHeader title="Krachtoefening" onBack={onBack} />
             <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
                 <div className="bg-green-100 border-2 border-green-400 rounded-xl p-3 mb-6 max-w-sm">
                     <p className="text-green-800 font-bold text-sm">+{new Date().getDay() === 6 ? '50' : '25'} punten na 5 cycli! {new Date().getDay() === 6 ? '🔥 2x!' : '⭐'}</p>
@@ -1182,54 +1124,16 @@ const WellnessApp = (props) => (
 
 // === MAIN APP SWITCHER ===
 const App = () => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const { user, loading, signOut } = useAuth();
     const [activeApp, setActiveApp] = useState(null);
     const [initialWellnessView, setInitialWellnessView] = useState('toolbox');
 
-    // Inspirational football quotes
-    const footballQuotes = [
-        { player: "Johan Cruijff", quote: "Voetbal speel je met je hoofd, je voeten zijn alleen maar de hulpmiddelen.", lesson: "Slim denken is sterker dan hard rennen." },
-        { player: "Xavi (Barcelona)", quote: "Snel denken is belangrijker dan snel lopen.", lesson: "Je hersenen zijn je superkracht." },
-        { player: "Andrea Pirlo", quote: "Rust aan de bal is sterker dan paniekvoetbal.", lesson: "Kalm blijven is vaak de beste truc." },
-        { player: "Lionel Messi", quote: "Je moet blijven vechten voor je droom, ook als het moeilijk is.", lesson: "Opgeven is nooit een optie." },
-        { player: "Arjen Robben", quote: "Je moet altijd blijven gaan, ook al val je 100 keer.", lesson: "Fouten maken mag, zolang je maar weer opstaat." },
-        { player: "Cristiano Ronaldo", quote: "Talent zonder hard werken is niets waard.", lesson: "Slim zijn helpt, maar oefenen maakt je echt goed." },
-        { player: "Zlatan Ibrahimović", quote: "Je hoeft niet te doen wat iedereen doet. Doe het op jouw manier.", lesson: "Durf anders te zijn." },
-        { player: "George Best", quote: "Probeer het gewoon, anders weet je nooit wat er had kunnen gebeuren.", lesson: "Het is beter iets te proberen dan spijt te hebben." },
-        { player: "Diego Simeone", quote: "Inzet is niet te onderhandelen.", lesson: "Je moet altijd je best doen, of je nou wint of verliest." },
-        { player: "Johan Cruijff", quote: "Elk nadeel heeft z'n voordeel.", lesson: "Ook als het tegenzit, zit er altijd iets goeds in." }
-    ];
-
-    const [dailyQuote] = useState(() => {
-        const randomIndex = Math.floor(Math.random() * footballQuotes.length);
-        return footballQuotes[randomIndex];
-    });
-
     useEffect(() => {
-        // Check active sessions and sets the user
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(session?.user ?? null);
-            setLoading(false);
-
-            // Initialize notifications if user is logged in
-            if (session?.user) {
-                initializeNotifications();
-            }
-        });
-
-        // Listen for changes on auth state (login, logout, etc.)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user ?? null);
-
-            // Initialize notifications on login
-            if (session?.user) {
-                initializeNotifications();
-            }
-        });
-
-        return () => subscription.unsubscribe();
-    }, []);
+        // Initialize notifications if user is logged in
+        if (user) {
+            initializeNotifications();
+        }
+    }, [user]);
 
     const initializeNotifications = async () => {
         // Register service worker
@@ -1253,13 +1157,8 @@ const App = () => {
         }
     };
 
-    const handleLogin = (loggedInUser) => {
-        setUser(loggedInUser);
-    };
-
     const handleLogout = async () => {
-        await supabase.auth.signOut();
-        setUser(null);
+        await signOut();
         setActiveApp(null);
     };
 
@@ -1281,10 +1180,6 @@ const App = () => {
                 </div>
             </div>
         );
-    }
-
-    if (!user) {
-        return <LoginScreen onLogin={handleLogin} />;
     }
 
     if (activeApp === 'sleep') {
