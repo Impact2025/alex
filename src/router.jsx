@@ -77,33 +77,7 @@ export const router = createBrowserRouter([
       <ProtectedRoute>
         <App />
       </ProtectedRoute>
-    ),
-    children: [
-      {
-        index: true,
-        element: <div>Home - App Selector</div> // Will be replaced with actual component
-      },
-      {
-        path: 'sleep',
-        element: <div>Sleep App</div> // Will be replaced with SleepApp
-      },
-      {
-        path: 'wellness',
-        element: <div>Wellness App</div> // Will be replaced with WellnessApp
-      },
-      {
-        path: 'journal',
-        element: <div>Journal</div> // Will be replaced with Journal component
-      },
-      {
-        path: 'dashboard',
-        element: <div>Dashboard</div> // Will be replaced with PointsDashboard
-      },
-      {
-        path: 'match-day',
-        element: <div>Match Day</div> // Will be replaced with MatchDay
-      }
-    ]
+    )
   },
   {
     path: '*',
