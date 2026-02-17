@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Delete, LogIn, Shield } from 'lucide-react';
+import { Delete } from 'lucide-react';
 import { useAuth } from './contexts/AuthContext';
 
 const LoginScreen = () => {
@@ -9,33 +9,23 @@ const LoginScreen = () => {
   const [pincode, setPincode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [shake, setShake] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (pincode.length !== 4) {
-      setError('Pincode moet 4 cijfers zijn');
-      return;
-    }
+  const handleSubmit = async () => {
+    if (pincode.length !== 4) return;
 
     setLoading(true);
     setError('');
 
     try {
       const { data, error } = await signInWithPincode(pincode);
-
-      if (error) {
-        throw error;
-      }
-
-      if (data?.user) {
-        // Navigate to home
-        navigate('/');
-      }
+      if (error) throw error;
+      if (data?.user) navigate('/');
     } catch (error) {
-      console.error('Login failed:', error);
-      setError(error.message || 'Ongeldige pincode');
+      setError('Onjuiste pincode');
       setPincode('');
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
     } finally {
       setLoading(false);
     }
@@ -43,8 +33,29 @@ const LoginScreen = () => {
 
   const handlePinPress = (num) => {
     if (pincode.length < 4) {
-      setPincode(pincode + num);
+      const next = pincode + num;
+      setPincode(next);
       setError('');
+      if (next.length === 4) {
+        setTimeout(() => handleSubmitPin(next), 80);
+      }
+    }
+  };
+
+  const handleSubmitPin = async (pin) => {
+    setLoading(true);
+    setError('');
+    try {
+      const { data, error } = await signInWithPincode(pin);
+      if (error) throw error;
+      if (data?.user) navigate('/');
+    } catch (error) {
+      setError('Onjuiste pincode');
+      setPincode('');
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -54,99 +65,145 @@ const LoginScreen = () => {
   };
 
   return (
-    <main
-      className="min-h-screen md:flex md:flex-col md:items-center md:justify-center p-4 md:p-8 text-white flex flex-col justify-center"
-      style={{
-        background: 'linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url(https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Johan_Cruijff_ArenA_-_Zicht_vanaf_de_noordzijde.jpg/1920px-Johan_Cruijff_ArenA_-_Zicht_vanaf_de_noordzijde.jpg) center/cover no-repeat'
-      }}
-    >
-      <header className="text-center mb-6 md:mb-8">
-        <h1 className="text-4xl md:text-5xl font-bold mb-2">AJAX</h1>
-        <p className="text-lg md:text-xl text-gray-300">Champions Academy</p>
-      </header>
+    <main className="min-h-screen flex items-center justify-center" style={{ background: '#f8f9fb' }}>
+      <div className="flex flex-col items-center w-full px-6" style={{ maxWidth: 360 }}>
 
-      <section className="w-full max-w-sm bg-white rounded-2xl p-6 md:p-8 shadow-2xl mx-auto" aria-label="Login formulier">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center" id="login-title">
-          Inloggen met Pincode
-        </h2>
-
-        <form onSubmit={handleSubmit} className="space-y-4" aria-labelledby="login-title">
-          <div>
-            <label id="pincode-label" className="block text-gray-700 font-semibold mb-2 text-center">
-              Voer je 4-cijferige pincode in
-            </label>
-
-            {/* Pin Display */}
-            <div className="flex justify-center gap-3 mb-4" role="group" aria-labelledby="pincode-label" aria-live="polite">
-              {[0, 1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="w-14 h-14 border-2 border-gray-300 rounded-lg flex items-center justify-center text-2xl font-bold text-gray-800 bg-white"
-                  aria-label={`Pincode cijfer ${i + 1} ${pincode[i] ? 'ingevuld' : 'leeg'}`}
-                >
-                  {pincode[i] ? '●' : ''}
-                </div>
-              ))}
-            </div>
-
-            {/* Number Pad */}
-            <div className="grid grid-cols-3 gap-3 mb-4" role="group" aria-label="Pincode invoer">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                <button
-                  key={num}
-                  type="button"
-                  onClick={() => handlePinPress(num.toString())}
-                  disabled={loading || pincode.length >= 4}
-                  className="h-16 bg-gray-100 hover:bg-gray-200 rounded-lg text-2xl font-bold text-gray-800 transition-colors disabled:opacity-50"
-                  aria-label={`Cijfer ${num}`}
-                >
-                  {num}
-                </button>
-              ))}
-              <div aria-hidden="true"></div>
-              <button
-                type="button"
-                onClick={() => handlePinPress('0')}
-                disabled={loading || pincode.length >= 4}
-                className="h-16 bg-gray-100 hover:bg-gray-200 rounded-lg text-2xl font-bold text-gray-800 transition-colors disabled:opacity-50"
-                aria-label="Cijfer 0"
-              >
-                0
-              </button>
-              <button
-                type="button"
-                onClick={handlePinDelete}
-                disabled={loading || pincode.length === 0}
-                className="h-16 bg-red-100 hover:bg-red-200 rounded-lg flex items-center justify-center transition-colors disabled:opacity-50"
-                aria-label="Verwijder laatste cijfer"
-              >
-                <Delete size={24} className="text-red-600" aria-hidden="true" />
-              </button>
-            </div>
+        {/* Logo / Header */}
+        <div className="mb-8 text-center">
+          {/* Groeipad logo */}
+          <div style={{
+            width: 72, height: 72, borderRadius: 20, background: '#DC2626',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 14px', boxShadow: '0 8px 24px rgba(220,38,38,0.25)',
+            fontSize: 36,
+          }}>
+            🌱
           </div>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: '#111', margin: 0, letterSpacing: -0.5 }}>
+            Groeipad
+          </h1>
+          <p style={{ fontSize: 13, color: '#9ca3af', marginTop: 4 }}>Voer je pincode in om verder te gaan</p>
+        </div>
 
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg text-sm" role="alert">
-              {error}
-            </div>
-          )}
+        {/* PIN dots */}
+        <div
+          className="flex gap-4 mb-6"
+          style={{ animation: shake ? 'shake 0.4s ease' : 'none' }}
+        >
+          {[0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              style={{
+                width: 14,
+                height: 14,
+                borderRadius: '50%',
+                background: pincode[i] ? '#DC2626' : '#e5e7eb',
+                transition: 'background 0.15s ease',
+              }}
+            />
+          ))}
+        </div>
 
+        {/* Error */}
+        {error && (
+          <p style={{ fontSize: 13, color: '#DC2626', marginBottom: 12, fontWeight: 500 }}>
+            {error}
+          </p>
+        )}
+
+        {/* Number pad */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, width: '100%' }}>
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+            <PinButton
+              key={num}
+              label={num}
+              onClick={() => handlePinPress(num.toString())}
+              disabled={loading || pincode.length >= 4}
+            />
+          ))}
+
+          {/* Empty cell */}
+          <div />
+
+          <PinButton
+            label="0"
+            onClick={() => handlePinPress('0')}
+            disabled={loading || pincode.length >= 4}
+          />
+
+          {/* Delete */}
           <button
-            type="submit"
-            disabled={loading || pincode.length !== 4}
-            className="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2 disabled:bg-gray-400"
-            aria-label={loading ? 'Bezig met laden' : 'Log in'}
+            type="button"
+            onClick={handlePinDelete}
+            disabled={loading || pincode.length === 0}
+            style={{
+              height: 60,
+              borderRadius: 14,
+              border: 'none',
+              background: 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: pincode.length === 0 ? 'not-allowed' : 'pointer',
+              opacity: pincode.length === 0 ? 0.3 : 1,
+              transition: 'opacity 0.15s',
+            }}
+            aria-label="Verwijder laatste cijfer"
           >
-            <LogIn size={20} aria-hidden="true" />
-            <span>{loading ? 'Bezig...' : 'Inloggen'}</span>
+            <Delete size={20} color="#6b7280" />
           </button>
-        </form>
+        </div>
 
-        <p className="text-center text-gray-500 text-sm mt-6" role="contentinfo">
-          Welkom bij de Champions Academy! 🏆
+        {/* Footer */}
+        <p style={{ marginTop: 40, fontSize: 12, color: '#d1d5db' }}>
+          Groeipad © 2026
         </p>
-      </section>
+      </div>
+
+      <style>{`
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          20% { transform: translateX(-8px); }
+          40% { transform: translateX(8px); }
+          60% { transform: translateX(-6px); }
+          80% { transform: translateX(6px); }
+        }
+      `}</style>
     </main>
+  );
+};
+
+const PinButton = ({ label, onClick, disabled }) => {
+  const [pressed, setPressed] = useState(false);
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      onMouseLeave={() => setPressed(false)}
+      onTouchStart={() => setPressed(true)}
+      onTouchEnd={() => { setPressed(false); }}
+      style={{
+        height: 60,
+        borderRadius: 14,
+        border: '1.5px solid #f0f0f0',
+        background: pressed ? '#f3f4f6' : '#ffffff',
+        fontSize: 22,
+        fontWeight: 600,
+        color: '#111',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.4 : 1,
+        boxShadow: pressed ? 'none' : '0 1px 3px rgba(0,0,0,0.06)',
+        transform: pressed ? 'scale(0.95)' : 'scale(1)',
+        transition: 'all 0.1s ease',
+      }}
+      aria-label={`Cijfer ${label}`}
+    >
+      {label}
+    </button>
   );
 };
 

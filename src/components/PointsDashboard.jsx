@@ -1,172 +1,145 @@
 import React from 'react';
-import { Trophy, Star, Award, TrendingUp, Target, Zap, Home } from 'lucide-react';
+import { Trophy, TrendingUp, Zap, Award, Target, ArrowLeft } from 'lucide-react';
 import { usePoints } from '../PointsContext';
 
-const PointsDashboard = ({ onBack }) => {
-  const {
-    totalPoints,
-    weeklyPoints,
-    currentStreak,
-    currentLevel,
-    progressToNextLevel,
-    unlockedAchievements,
-    LEVELS,
-    ACHIEVEMENTS
-  } = usePoints();
+const C = {
+  bg: '#f8f9fb', white: '#ffffff', red: '#DC2626',
+  border: '#f0f0f0', borderMd: '#e5e7eb',
+  text: '#111111', textSub: '#6b7280', textMuted: '#9ca3af',
+};
 
+const Card = ({ children, style }) => (
+  <div style={{
+    background: C.white, borderRadius: 16, border: `1.5px solid ${C.border}`,
+    boxShadow: '0 1px 4px rgba(0,0,0,0.06)', padding: 20, ...style,
+  }}>
+    {children}
+  </div>
+);
+
+const PointsDashboard = ({ onBack }) => {
+  const { totalPoints, weeklyPoints, currentStreak, currentLevel, progressToNextLevel, unlockedAchievements, LEVELS, ACHIEVEMENTS } = usePoints();
   const nextLevel = LEVELS.find(l => l.id === currentLevel.id + 1);
 
   return (
-    <div className="bg-gradient-to-b from-red-700 to-red-900 min-h-screen text-white">
-      <div className="p-6">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <button onClick={onBack} className="bg-white bg-opacity-20 p-2 rounded-full">
-            <Home className="w-6 h-6" />
+    <div style={{ minHeight: '100vh', background: C.bg }}>
+      {/* Header */}
+      <div style={{ background: C.white, borderBottom: `1px solid ${C.border}`, position: 'sticky', top: 0, zIndex: 10 }}>
+        <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', gap: 16 }}>
+          <button onClick={onBack} style={{ width: 40, height: 40, borderRadius: 10, border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <ArrowLeft size={20} color={C.textSub} />
           </button>
-          <h1 className="text-2xl font-bold">Mijn Punten</h1>
-          <div className="w-10"></div>
+          <span style={{ fontWeight: 700, fontSize: 16, color: C.text }}>Mijn Punten</span>
         </div>
+      </div>
 
-        {/* Current Level Card */}
-        <div className="bg-white text-gray-800 rounded-3xl p-6 mb-6 shadow-xl">
-          <div className="flex items-center justify-between mb-4">
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: '24px 24px 40px' }}>
+
+        {/* Current Level */}
+        <Card style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <div>
-              <p className="text-sm text-gray-500 mb-1">Huidige Level</p>
-              <h2 className="text-2xl font-bold">{currentLevel.name}</h2>
+              <p style={{ margin: '0 0 4px', fontSize: 12, color: C.textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Huidig Level</p>
+              <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: C.text }}>{currentLevel.name}</h2>
             </div>
-            <div className={`text-6xl bg-gradient-to-br ${currentLevel.color} w-20 h-20 rounded-full flex items-center justify-center`}>
-              {currentLevel.badge}
-            </div>
+            <span style={{ fontSize: 48 }}>{currentLevel.badge}</span>
           </div>
 
-          {/* Progress Bar */}
-          {nextLevel && (
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="font-semibold">Voortgang naar {nextLevel.name}</span>
-                <span className="text-gray-600">{Math.round(progressToNextLevel)}%</span>
+          {nextLevel ? (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span style={{ fontSize: 13, color: C.textSub, fontWeight: 600 }}>Naar {nextLevel.name}</span>
+                <span style={{ fontSize: 13, color: C.textSub }}>{Math.round(progressToNextLevel)}%</span>
               </div>
-              <div className="bg-gray-200 rounded-full h-3 overflow-hidden">
-                <div
-                  className={`bg-gradient-to-r ${nextLevel.color} h-full transition-all duration-500`}
-                  style={{ width: `${progressToNextLevel}%` }}
-                ></div>
+              <div style={{ background: C.borderMd, borderRadius: 99, height: 8, overflow: 'hidden' }}>
+                <div style={{ width: `${progressToNextLevel}%`, height: '100%', background: C.red, borderRadius: 99, transition: 'width 0.5s ease' }} />
               </div>
-              <p className="text-xs text-gray-500 mt-2">
-                {nextLevel.minPoints - totalPoints} punten tot volgende level
+              <p style={{ margin: '8px 0 0', fontSize: 12, color: C.textMuted }}>
+                Nog {nextLevel.minPoints - totalPoints} punten nodig
               </p>
+            </>
+          ) : (
+            <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: 12, padding: '12px 16px', textAlign: 'center' }}>
+              <p style={{ margin: 0, fontWeight: 700, color: '#92400e' }}>Maximum Level Bereikt! Je bent een Ajax Legende!</p>
             </div>
           )}
+        </Card>
 
-          {!nextLevel && (
-            <div className="bg-yellow-100 text-yellow-800 p-4 rounded-lg text-center">
-              <Trophy className="w-8 h-8 mx-auto mb-2" />
-              <p className="font-bold">Maximum Level Bereikt!</p>
-              <p className="text-sm">Je bent een echte Ajax Legende! 🏆</p>
-            </div>
-          )}
+        {/* Stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
+          {[
+            { icon: Trophy, label: 'Totaal', value: totalPoints, color: '#f59e0b' },
+            { icon: TrendingUp, label: 'Deze Week', value: weeklyPoints, color: '#3b82f6' },
+            { icon: Zap, label: 'Streak', value: currentStreak, color: C.red },
+          ].map(({ icon: Icon, label, value, color }) => (
+            <Card key={label} style={{ padding: 16, textAlign: 'center' }}>
+              <Icon size={20} color={color} style={{ margin: '0 auto 8px' }} />
+              <p style={{ margin: '0 0 2px', fontSize: 22, fontWeight: 800, color: C.text }}>{value}</p>
+              <p style={{ margin: 0, fontSize: 11, color: C.textMuted }}>{label}</p>
+            </Card>
+          ))}
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <div className="bg-white bg-opacity-10 rounded-2xl p-4 text-center">
-            <Trophy className="w-6 h-6 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{totalPoints}</p>
-            <p className="text-xs opacity-75">Totaal</p>
+        {/* All Levels */}
+        <Card style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <Target size={18} color={C.red} />
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.text }}>Alle Levels</h3>
           </div>
-          <div className="bg-white bg-opacity-10 rounded-2xl p-4 text-center">
-            <TrendingUp className="w-6 h-6 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{weeklyPoints}</p>
-            <p className="text-xs opacity-75">Deze Week</p>
-          </div>
-          <div className="bg-white bg-opacity-10 rounded-2xl p-4 text-center">
-            <Zap className="w-6 h-6 mx-auto mb-2" />
-            <p className="text-2xl font-bold">{currentStreak}</p>
-            <p className="text-xs opacity-75">Streak</p>
-          </div>
-        </div>
-
-        {/* All Levels Overview */}
-        <div className="bg-white text-gray-800 rounded-3xl p-6 mb-6">
-          <h3 className="font-bold text-lg mb-4 flex items-center">
-            <Target className="w-5 h-5 mr-2 text-red-600" />
-            Alle Levels
-          </h3>
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {LEVELS.map(level => {
               const isUnlocked = totalPoints >= level.minPoints;
               const isCurrent = level.id === currentLevel.id;
-
               return (
-                <div
-                  key={level.id}
-                  className={`flex items-center justify-between p-3 rounded-xl ${
-                    isCurrent ? 'bg-red-100 border-2 border-red-500' :
-                    isUnlocked ? 'bg-green-50' : 'bg-gray-100'
-                  }`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className={`text-3xl ${!isUnlocked && 'grayscale opacity-50'}`}>
-                      {level.badge}
-                    </div>
+                <div key={level.id} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '10px 14px', borderRadius: 12,
+                  background: isCurrent ? '#fff5f5' : isUnlocked ? '#f0fdf4' : C.bg,
+                  border: `1.5px solid ${isCurrent ? '#fecaca' : isUnlocked ? '#bbf7d0' : C.border}`,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span style={{ fontSize: 28, opacity: isUnlocked ? 1 : 0.3 }}>{level.badge}</span>
                     <div>
-                      <p className={`font-bold ${isCurrent && 'text-red-600'}`}>
-                        {level.name}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {level.minPoints} - {level.maxPoints === 99999 ? '∞' : level.maxPoints} punten
-                      </p>
+                      <p style={{ margin: '0 0 2px', fontWeight: 700, fontSize: 14, color: isCurrent ? C.red : C.text }}>{level.name}</p>
+                      <p style={{ margin: 0, fontSize: 11, color: C.textMuted }}>{level.minPoints}–{level.maxPoints === 99999 ? '∞' : level.maxPoints} punten</p>
                     </div>
                   </div>
-                  {isCurrent && (
-                    <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-full font-bold">
-                      Huidig
-                    </span>
-                  )}
-                  {isUnlocked && !isCurrent && (
-                    <span className="text-green-600">✓</span>
-                  )}
+                  {isCurrent && <span style={{ fontSize: 11, fontWeight: 700, background: C.red, color: '#fff', padding: '4px 10px', borderRadius: 99 }}>Huidig</span>}
+                  {isUnlocked && !isCurrent && <span style={{ color: '#16a34a', fontWeight: 700 }}>✓</span>}
                 </div>
               );
             })}
           </div>
-        </div>
+        </Card>
 
         {/* Achievements */}
-        <div className="bg-white text-gray-800 rounded-3xl p-6">
-          <h3 className="font-bold text-lg mb-4 flex items-center">
-            <Award className="w-5 h-5 mr-2 text-red-600" />
-            Achievements ({unlockedAchievements.length}/{Object.keys(ACHIEVEMENTS).length})
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
+        <Card>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <Award size={18} color={C.red} />
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: C.text }}>
+              Achievements ({unlockedAchievements.length}/{Object.keys(ACHIEVEMENTS).length})
+            </h3>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
             {Object.values(ACHIEVEMENTS).map(achievement => {
               const isUnlocked = unlockedAchievements.includes(achievement.id);
-
               return (
-                <div
-                  key={achievement.id}
-                  className={`p-3 rounded-xl text-center ${
-                    isUnlocked ? 'bg-yellow-100 border-2 border-yellow-400' : 'bg-gray-100'
-                  }`}
-                >
-                  <div className={`text-3xl mb-1 ${!isUnlocked && 'grayscale opacity-40'}`}>
-                    {achievement.icon}
-                  </div>
-                  <p className={`text-xs font-bold mb-1 ${!isUnlocked && 'text-gray-400'}`}>
-                    {achievement.name}
-                  </p>
-                  <p className="text-xs text-gray-500">{achievement.description}</p>
+                <div key={achievement.id} style={{
+                  padding: '14px 10px', borderRadius: 12, textAlign: 'center',
+                  background: isUnlocked ? '#fefce8' : C.bg,
+                  border: `1.5px solid ${isUnlocked ? '#fde68a' : C.border}`,
+                }}>
+                  <div style={{ fontSize: 28, marginBottom: 6, opacity: isUnlocked ? 1 : 0.25 }}>{achievement.icon}</div>
+                  <p style={{ margin: '0 0 4px', fontSize: 12, fontWeight: 700, color: isUnlocked ? C.text : C.textMuted }}>{achievement.name}</p>
+                  <p style={{ margin: '0 0 6px', fontSize: 11, color: C.textMuted }}>{achievement.description}</p>
                   {isUnlocked && (
-                    <div className="mt-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-                      Behaald! +{achievement.points}
-                    </div>
+                    <span style={{ fontSize: 11, fontWeight: 700, background: '#16a34a', color: '#fff', padding: '2px 8px', borderRadius: 99 }}>+{achievement.points}</span>
                   )}
                 </div>
               );
             })}
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

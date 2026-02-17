@@ -3,129 +3,86 @@ import { trapFocus, handleEscapeKey } from '../../utils/keyboardNav';
 import { announceModal } from '../../utils/announcer';
 import { sanitizeTextInput } from '../../utils/validation';
 
+const overlay = {
+  position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  zIndex: 9999, padding: 24,
+};
+const card = {
+  background: '#fff', borderRadius: 20, padding: 28,
+  width: '100%', maxWidth: 400, boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+};
+const inputStyle = {
+  width: '100%', boxSizing: 'border-box', padding: '10px 14px',
+  border: '1.5px solid #e5e7eb', borderRadius: 10,
+  fontSize: 14, fontFamily: 'inherit', outline: 'none',
+};
+const labelStyle = { display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 };
+
 const GratitudeInputModal = ({ show, onClose, onSubmit, value1, onChange1, value2, onChange2, value3, onChange3 }) => {
   const modalRef = useRef(null);
 
   useEffect(() => {
     if (!show) return;
-
     announceModal(true, 'Dankbaarheid');
-
     const cleanupEscape = handleEscapeKey(onClose);
-    let cleanupFocus = () => {};
-
-    if (modalRef.current) {
-      cleanupFocus = trapFocus(modalRef.current);
-    }
-
-    return () => {
-      cleanupEscape();
-      cleanupFocus();
-      announceModal(false, 'Dankbaarheid');
-    };
+    const cleanupFocus = modalRef.current ? trapFocus(modalRef.current) : () => {};
+    return () => { cleanupEscape(); cleanupFocus(); announceModal(false, 'Dankbaarheid'); };
   }, [show, onClose]);
 
   if (!show) return null;
 
-  const isButtonDisabled = !value1.trim() || !value2.trim() || !value3.trim();
+  const isDisabled = !value1.trim() || !value2.trim() || !value3.trim();
 
-  const handleSubmitWithValidation = () => {
-    const sanitized1 = sanitizeTextInput(value1);
-    const sanitized2 = sanitizeTextInput(value2);
-    const sanitized3 = sanitizeTextInput(value3);
-
-    if (sanitized1 && sanitized2 && sanitized3) {
-      onSubmit();
-    }
+  const handleSubmit = () => {
+    const s1 = sanitizeTextInput(value1);
+    const s2 = sanitizeTextInput(value2);
+    const s3 = sanitizeTextInput(value3);
+    if (s1 && s2 && s3) onSubmit();
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && e.ctrlKey && !isButtonDisabled) {
-      handleSubmitWithValidation();
-    }
+    if (e.key === 'Enter' && e.ctrlKey && !isDisabled) handleSubmit();
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-85 flex items-center justify-center z-50 p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="gratitude-modal-title"
-      aria-describedby="gratitude-modal-description"
-    >
-      <div ref={modalRef} className="bg-white rounded-3xl p-6 w-full max-w-sm" onKeyDown={handleKeyDown}>
-        <h2 id="gratitude-modal-title" className="text-xl font-bold text-red-700 mb-4">
-          Dankbaarheid ⭐
-        </h2>
-        <p id="gratitude-modal-description" className="text-sm text-gray-600 mb-4">
-          Schrijf 3 dingen waar je vandaag dankbaar voor bent:
-        </p>
-        <div className="space-y-3">
-          <div>
-            <label htmlFor="gratitude-1" className="block font-semibold text-gray-700 mb-1">
-              1. Ik ben dankbaar voor...
-            </label>
-            <input
-              id="gratitude-1"
-              type="text"
-              value={value1}
-              onChange={onChange1}
-              className="w-full p-3 border-2 border-gray-200 rounded-lg text-gray-900 focus:border-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
-              placeholder="...mijn familie"
-              aria-required="true"
-            />
-          </div>
-          <div>
-            <label htmlFor="gratitude-2" className="block font-semibold text-gray-700 mb-1">
-              2. Ik ben dankbaar voor...
-            </label>
-            <input
-              id="gratitude-2"
-              type="text"
-              value={value2}
-              onChange={onChange2}
-              className="w-full p-3 border-2 border-gray-200 rounded-lg text-gray-900 focus:border-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
-              placeholder="...mijn vrienden"
-              aria-required="true"
-            />
-          </div>
-          <div>
-            <label htmlFor="gratitude-3" className="block font-semibold text-gray-700 mb-1">
-              3. Ik ben dankbaar voor...
-            </label>
-            <input
-              id="gratitude-3"
-              type="text"
-              value={value3}
-              onChange={onChange3}
-              className="w-full p-3 border-2 border-gray-200 rounded-lg text-gray-900 focus:border-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
-              placeholder="...voetbal kunnen spelen"
-              aria-required="true"
-            />
-          </div>
+    <div style={overlay} role="dialog" aria-modal="true" aria-labelledby="gratitude-title" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div ref={modalRef} style={card} onKeyDown={handleKeyDown}>
+        <h2 id="gratitude-title" style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 800, color: '#111' }}>Dankbaarheid ⭐</h2>
+        <p style={{ margin: '0 0 20px', fontSize: 13, color: '#6b7280' }}>Schrijf 3 dingen waar je vandaag dankbaar voor bent:</p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {[
+            { id: 'g1', label: '1. Ik ben dankbaar voor...', value: value1, onChange: onChange1, placeholder: '...mijn familie' },
+            { id: 'g2', label: '2. Ik ben dankbaar voor...', value: value2, onChange: onChange2, placeholder: '...mijn vrienden' },
+            { id: 'g3', label: '3. Ik ben dankbaar voor...', value: value3, onChange: onChange3, placeholder: '...voetbal kunnen spelen' },
+          ].map(({ id, label, value, onChange, placeholder }) => (
+            <div key={id}>
+              <label htmlFor={id} style={labelStyle}>{label}</label>
+              <input id={id} type="text" value={value} onChange={onChange} placeholder={placeholder}
+                style={inputStyle} aria-required="true"
+                onFocus={e => e.target.style.borderColor = '#DC2626'}
+                onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+              />
+            </div>
+          ))}
         </div>
-        <div className="mt-6 flex flex-col gap-2">
-          <button
-            onClick={handleSubmitWithValidation}
-            disabled={isButtonDisabled}
-            className={`w-full text-white font-bold py-3 rounded-full min-h-[44px] transition-colors ${
-              isButtonDisabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
-            }`}
-            aria-label="Voltooi missie en verdien 1 goal"
-          >
-            Voltooi Missie (+1 goal)
+
+        <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <button onClick={handleSubmit} disabled={isDisabled} style={{
+            width: '100%', padding: '14px', borderRadius: 12, border: 'none',
+            background: isDisabled ? '#d1d5db' : '#DC2626', color: '#fff',
+            fontWeight: 700, fontSize: 15, cursor: isDisabled ? 'not-allowed' : 'pointer',
+          }}>
+            Voltooi Missie
           </button>
-          <button
-            onClick={onClose}
-            className="w-full text-gray-600 font-bold py-2 hover:text-red-600 transition-colors min-h-[44px]"
-            aria-label="Annuleer en sluit"
-          >
+          <button onClick={onClose} style={{
+            width: '100%', padding: '10px', borderRadius: 12, border: 'none',
+            background: 'transparent', color: '#6b7280', fontWeight: 600, cursor: 'pointer', fontSize: 14,
+          }}>
             Annuleren
           </button>
         </div>
-        <p className="text-xs text-gray-500 mt-4 text-center">
-          Tip: Druk Ctrl+Enter om snel op te slaan
-        </p>
       </div>
     </div>
   );

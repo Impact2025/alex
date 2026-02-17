@@ -15,7 +15,7 @@
 
   color-scheme: light;
   color: #1f2937;
-  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  background: #f8f9fb;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -34,14 +34,12 @@ body,
 body {
   margin: 0;
   min-width: 320px;
-  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-  background-attachment: fixed;
+  background: #f8f9fb;
 }
 
 #root {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 1rem;
+  min-height: 100vh;
+  width: 100%;
 }
 
 /* Scrollbar Styling */

@@ -3,110 +3,88 @@ import { trapFocus, handleEscapeKey } from '../../utils/keyboardNav';
 import { announceModal } from '../../utils/announcer';
 import { sanitizeTextInput } from '../../utils/validation';
 
+const overlay = {
+  position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  zIndex: 9999, padding: 24,
+};
+const card = {
+  background: '#fff', borderRadius: 20, padding: 28,
+  width: '100%', maxWidth: 400, boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+};
+const labelStyle = { display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 };
+const textareaStyle = {
+  width: '100%', boxSizing: 'border-box', padding: '10px 14px',
+  border: '1.5px solid #e5e7eb', borderRadius: 10,
+  fontSize: 14, fontFamily: 'inherit', resize: 'vertical', outline: 'none',
+};
+
 const DribbelInputModal = ({ show, onClose, onSubmit, dareValue, onDareChange, tryValue, onTryChange }) => {
   const modalRef = useRef(null);
 
   useEffect(() => {
     if (!show) return;
-
     announceModal(true, 'Pyjama-Dribbel');
-
     const cleanupEscape = handleEscapeKey(onClose);
-    let cleanupFocus = () => {};
-
-    if (modalRef.current) {
-      cleanupFocus = trapFocus(modalRef.current);
-    }
-
-    return () => {
-      cleanupEscape();
-      cleanupFocus();
-      announceModal(false, 'Pyjama-Dribbel');
-    };
+    const cleanupFocus = modalRef.current ? trapFocus(modalRef.current) : () => {};
+    return () => { cleanupEscape(); cleanupFocus(); announceModal(false, 'Pyjama-Dribbel'); };
   }, [show, onClose]);
 
   if (!show) return null;
 
-  const isButtonDisabled = !dareValue.trim() || !tryValue.trim();
+  const isDisabled = !dareValue.trim() || !tryValue.trim();
 
-  const handleSubmitWithValidation = () => {
-    const sanitizedDare = sanitizeTextInput(dareValue);
-    const sanitizedTry = sanitizeTextInput(tryValue);
-
-    if (sanitizedDare && sanitizedTry) {
-      onSubmit();
-    }
+  const handleSubmit = () => {
+    const d = sanitizeTextInput(dareValue);
+    const t = sanitizeTextInput(tryValue);
+    if (d && t) onSubmit();
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && e.ctrlKey && !isButtonDisabled) {
-      handleSubmitWithValidation();
-    }
+    if (e.key === 'Enter' && e.ctrlKey && !isDisabled) handleSubmit();
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-85 flex items-center justify-center z-50 p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="dribble-modal-title"
-    >
-      <div ref={modalRef} className="bg-white rounded-3xl p-6 w-full max-w-sm" onKeyDown={handleKeyDown}>
-        <h2 id="dribble-modal-title" className="text-xl font-bold text-red-700 mb-4">
-          Pyjama-Dribbel ✎
-        </h2>
-        <div className="space-y-4">
+    <div style={overlay} role="dialog" aria-modal="true" aria-labelledby="dribbel-title" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div ref={modalRef} style={card} onKeyDown={handleKeyDown}>
+        <h2 id="dribbel-title" style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 800, color: '#111' }}>Pyjama-Dribbel ✎</h2>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <label htmlFor="dare-input" className="block font-semibold text-gray-700 mb-1">
-              Vandaag durfde ik...
-            </label>
-            <textarea
-              id="dare-input"
-              value={dareValue}
-              onChange={onDareChange}
-              rows="3"
-              className="w-full p-2 border-2 border-gray-200 rounded-lg text-gray-900 focus:border-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+            <label htmlFor="dare-input" style={labelStyle}>Vandaag durfde ik...</label>
+            <textarea id="dare-input" value={dareValue} onChange={onDareChange} rows={3}
               placeholder="...iets te vragen in de klas."
-              aria-required="true"
+              style={textareaStyle} aria-required="true"
+              onFocus={e => e.target.style.borderColor = '#DC2626'}
+              onBlur={e => e.target.style.borderColor = '#e5e7eb'}
             />
           </div>
           <div>
-            <label htmlFor="try-input" className="block font-semibold text-gray-700 mb-1">
-              Morgen ga ik proberen...
-            </label>
-            <textarea
-              id="try-input"
-              value={tryValue}
-              onChange={onTryChange}
-              rows="3"
-              className="w-full p-2 border-2 border-gray-200 rounded-lg text-gray-900 focus:border-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+            <label htmlFor="try-input" style={labelStyle}>Morgen ga ik proberen...</label>
+            <textarea id="try-input" value={tryValue} onChange={onTryChange} rows={3}
               placeholder="...een nieuw recept uit te proberen."
-              aria-required="true"
+              style={textareaStyle} aria-required="true"
+              onFocus={e => e.target.style.borderColor = '#DC2626'}
+              onBlur={e => e.target.style.borderColor = '#e5e7eb'}
             />
           </div>
         </div>
-        <div className="mt-6 flex flex-col gap-2">
-          <button
-            onClick={handleSubmitWithValidation}
-            disabled={isButtonDisabled}
-            className={`w-full text-white font-bold py-3 rounded-full min-h-[44px] transition-colors ${
-              isButtonDisabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
-            }`}
-            aria-label="Voltooi missie en verdien 1 goal"
-          >
-            Voltooi Missie (+1 goal)
+
+        <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <button onClick={handleSubmit} disabled={isDisabled} style={{
+            width: '100%', padding: '14px', borderRadius: 12, border: 'none',
+            background: isDisabled ? '#d1d5db' : '#DC2626', color: '#fff',
+            fontWeight: 700, fontSize: 15, cursor: isDisabled ? 'not-allowed' : 'pointer',
+          }}>
+            Voltooi Missie
           </button>
-          <button
-            onClick={onClose}
-            className="w-full text-gray-600 font-bold py-2 hover:text-red-600 transition-colors min-h-[44px]"
-            aria-label="Annuleer en sluit"
-          >
+          <button onClick={onClose} style={{
+            width: '100%', padding: '10px', borderRadius: 12, border: 'none',
+            background: 'transparent', color: '#6b7280', fontWeight: 600, cursor: 'pointer', fontSize: 14,
+          }}>
             Annuleren
           </button>
         </div>
-        <p className="text-xs text-gray-500 mt-4 text-center">
-          Tip: Druk Ctrl+Enter om snel op te slaan
-        </p>
       </div>
     </div>
   );

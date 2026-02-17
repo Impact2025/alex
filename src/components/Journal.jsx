@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Calendar, Star, Trophy, Brain, Edit3, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Calendar, Star, Trophy, Brain, ChevronDown, ChevronUp } from 'lucide-react';
 import * as dailyEntryService from '../dailyEntryService';
+
+const C = {
+  bg: '#f8f9fb', white: '#ffffff', red: '#DC2626',
+  border: '#f0f0f0', borderMd: '#e5e7eb',
+  text: '#111111', textSub: '#6b7280', textMuted: '#9ca3af',
+};
 
 const Journal = ({ onBack, user }) => {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedEntry, setExpandedEntry] = useState(null);
 
-  useEffect(() => {
-    loadEntries();
-  }, [user]);
+  useEffect(() => { loadEntries(); }, [user]);
 
   const loadEntries = async () => {
-    if (!user) return;
-
+    if (!user) { setLoading(false); return; }
     setLoading(true);
     const data = await dailyEntryService.getAllEntries(user.id, 30);
     setEntries(data);
@@ -22,157 +25,137 @@ const Journal = ({ onBack, user }) => {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    return date.toLocaleDateString('nl-NL', options);
+    return date.toLocaleDateString('nl-NL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   };
 
-  const toggleEntry = (entryId) => {
-    setExpandedEntry(expandedEntry === entryId ? null : entryId);
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-100 p-6">
-        <div className="flex items-center mb-6">
-          <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-200">
-            <ArrowLeft className="text-red-600" size={24} />
-          </button>
-          <h1 className="text-2xl font-bold ml-4 text-red-700">Mijn Dagboek</h1>
-        </div>
-        <div className="text-center text-gray-600 mt-20">Laden...</div>
+  const Header = () => (
+    <div style={{ background: C.white, borderBottom: `1px solid ${C.border}`, position: 'sticky', top: 0, zIndex: 10 }}>
+      <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', gap: 16 }}>
+        <button onClick={onBack} style={{ width: 40, height: 40, borderRadius: 10, border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <ArrowLeft size={20} color={C.textSub} />
+        </button>
+        <span style={{ fontWeight: 700, fontSize: 16, color: C.text }}>Logboek</span>
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (entries.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-100 p-6">
-        <div className="flex items-center mb-6">
-          <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-200">
-            <ArrowLeft className="text-red-600" size={24} />
-          </button>
-          <h1 className="text-2xl font-bold ml-4 text-red-700">Mijn Dagboek</h1>
-        </div>
-        <div className="text-center mt-20">
-          <div className="text-6xl mb-4">📔</div>
-          <p className="text-gray-600">Nog geen dagboek entries.</p>
-          <p className="text-gray-500 text-sm mt-2">Start met dagelijkse activiteiten om je dagboek te vullen!</p>
-        </div>
+  if (loading) return (
+    <div style={{ minHeight: '100vh', background: C.bg }}>
+      <Header />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200 }}>
+        <p style={{ color: C.textMuted }}>Laden...</p>
       </div>
-    );
-  }
+    </div>
+  );
+
+  if (entries.length === 0) return (
+    <div style={{ minHeight: '100vh', background: C.bg }}>
+      <Header />
+      <div style={{ textAlign: 'center', padding: '80px 24px' }}>
+        <div style={{ fontSize: 64, marginBottom: 16 }}>📔</div>
+        <p style={{ fontWeight: 600, color: C.text, marginBottom: 8 }}>Nog geen dagboek entries</p>
+        <p style={{ color: C.textMuted, fontSize: 14 }}>Start met dagelijkse activiteiten om je logboek te vullen!</p>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 md:p-6">
-      <div className="flex items-center mb-6">
-        <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-200">
-          <ArrowLeft className="text-red-600" size={24} />
-        </button>
-        <h1 className="text-2xl font-bold ml-4 text-red-700">Mijn Dagboek 📔</h1>
-      </div>
+    <div style={{ minHeight: '100vh', background: C.bg }}>
+      <Header />
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: '24px 24px 40px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {entries.map((entry) => {
+            const isExpanded = expandedEntry === entry.id;
+            const hasContent = entry.morning_goal || entry.thoughts || entry.dribbel_dare || entry.gratitude_1;
 
-      <div className="space-y-3">
-        {entries.map((entry) => {
-          const isExpanded = expandedEntry === entry.id;
-          const hasContent = entry.morning_goal || entry.thoughts || entry.dribbel_dare || entry.gratitude_1;
-
-          return (
-            <div
-              key={entry.id}
-              className="bg-white rounded-2xl shadow-md overflow-hidden"
-            >
-              {/* Header - Always visible */}
-              <button
-                onClick={() => toggleEntry(entry.id)}
-                className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  <Calendar className="text-red-600" size={20} />
-                  <div className="text-left">
-                    <p className="font-bold text-gray-800">{formatDate(entry.entry_date)}</p>
-                    <p className="text-xs text-gray-500">
-                      {entry.completed_missions?.length || 0} missies · {entry.points_earned || 0} punten
-                    </p>
+            return (
+              <div key={entry.id} style={{ background: C.white, borderRadius: 16, border: `1.5px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+                {/* Header row */}
+                <button
+                  onClick={() => setExpandedEntry(isExpanded ? null : entry.id)}
+                  style={{ width: '100%', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: '#fff5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Calendar size={18} color={C.red} />
+                    </div>
+                    <div>
+                      <p style={{ margin: '0 0 2px', fontWeight: 700, fontSize: 14, color: C.text }}>{formatDate(entry.entry_date)}</p>
+                      <p style={{ margin: 0, fontSize: 12, color: C.textMuted }}>
+                        {entry.completed_missions?.length || 0} missies · {entry.points_earned || 0} punten
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  {hasContent && <Star className="text-yellow-500" size={16} fill="currentColor" />}
-                  {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                </div>
-              </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                    {hasContent && <Star size={14} color="#f59e0b" fill="#f59e0b" />}
+                    {isExpanded ? <ChevronUp size={18} color={C.textSub} /> : <ChevronDown size={18} color={C.textSub} />}
+                  </div>
+                </button>
 
-              {/* Expanded content */}
-              {isExpanded && (
-                <div className="p-4 pt-0 border-t border-gray-100 space-y-4">
-                  {/* Morning data */}
-                  {entry.morning_goal && (
-                    <div className="bg-blue-50 rounded-lg p-3">
-                      <p className="text-xs font-semibold text-blue-700 mb-1">🌅 Ochtend Doel</p>
-                      <p className="text-sm text-gray-800">{entry.morning_goal}</p>
-                      {entry.morning_sleep && (
-                        <p className="text-xs text-gray-600 mt-1">Slaap: {entry.morning_sleep}/10</p>
+                {/* Expanded */}
+                {isExpanded && (
+                  <div style={{ padding: '0 20px 20px', borderTop: `1px solid ${C.border}', paddingTop: 16` }}>
+                    <div style={{ paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {entry.morning_goal && (
+                        <div style={{ background: '#eff6ff', borderRadius: 12, padding: '10px 14px' }}>
+                          <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, color: '#1d4ed8' }}>🌅 Ochtend Doel</p>
+                          <p style={{ margin: 0, fontSize: 13, color: C.text }}>{entry.morning_goal}</p>
+                          {entry.morning_sleep && <p style={{ margin: '4px 0 0', fontSize: 11, color: C.textMuted }}>Slaap: {entry.morning_sleep}/10</p>}
+                        </div>
+                      )}
+
+                      {entry.thoughts && (
+                        <div style={{ background: '#faf5ff', borderRadius: 12, padding: '10px 14px' }}>
+                          <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, color: '#7c3aed', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Brain size={12} /> Gedachten
+                          </p>
+                          <p style={{ margin: 0, fontSize: 13, color: C.text }}>{entry.thoughts}</p>
+                        </div>
+                      )}
+
+                      {entry.dribbel_dare && (
+                        <div style={{ background: '#f0fdf4', borderRadius: 12, padding: '10px 14px' }}>
+                          <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#15803d' }}>✎ Pyjama-Dribbel</p>
+                          <p style={{ margin: '0 0 2px', fontSize: 11, color: C.textMuted }}>Vandaag durfde ik:</p>
+                          <p style={{ margin: '0 0 8px', fontSize: 13, color: C.text }}>{entry.dribbel_dare}</p>
+                          {entry.dribbel_try && <>
+                            <p style={{ margin: '0 0 2px', fontSize: 11, color: C.textMuted }}>Morgen ga ik proberen:</p>
+                            <p style={{ margin: 0, fontSize: 13, color: C.text }}>{entry.dribbel_try}</p>
+                          </>}
+                        </div>
+                      )}
+
+                      {(entry.gratitude_1 || entry.gratitude_2 || entry.gratitude_3) && (
+                        <div style={{ background: '#fefce8', borderRadius: 12, padding: '10px 14px' }}>
+                          <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: '#a16207', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Star size={12} /> Dankbaarheid
+                          </p>
+                          {[entry.gratitude_1, entry.gratitude_2, entry.gratitude_3].filter(Boolean).map((g, i) => (
+                            <p key={i} style={{ margin: i === 0 ? 0 : '4px 0 0', fontSize: 13, color: C.text }}>• {g}</p>
+                          ))}
+                        </div>
+                      )}
+
+                      {entry.points_earned > 0 && (
+                        <div style={{ background: '#fff5f5', borderRadius: 12, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: C.red }}>Punten Verdiend</p>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <Trophy size={16} color="#d97706" />
+                            <span style={{ fontSize: 18, fontWeight: 800, color: C.red }}>+{entry.points_earned}</span>
+                          </div>
+                        </div>
                       )}
                     </div>
-                  )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
 
-                  {/* Thoughts */}
-                  {entry.thoughts && (
-                    <div className="bg-purple-50 rounded-lg p-3">
-                      <p className="text-xs font-semibold text-purple-700 mb-1 flex items-center">
-                        <Brain size={14} className="mr-1" /> Gedachten
-                      </p>
-                      <p className="text-sm text-gray-800">{entry.thoughts}</p>
-                    </div>
-                  )}
-
-                  {/* Dribbel */}
-                  {entry.dribbel_dare && (
-                    <div className="bg-green-50 rounded-lg p-3">
-                      <p className="text-xs font-semibold text-green-700 mb-2 flex items-center">
-                        <Edit3 size={14} className="mr-1" /> Pyjama-Dribbel
-                      </p>
-                      <p className="text-xs text-gray-600 mb-1">Vandaag durfde ik:</p>
-                      <p className="text-sm text-gray-800 mb-2">{entry.dribbel_dare}</p>
-                      {entry.dribbel_try && (
-                        <>
-                          <p className="text-xs text-gray-600 mb-1">Morgen ga ik proberen:</p>
-                          <p className="text-sm text-gray-800">{entry.dribbel_try}</p>
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Gratitude */}
-                  {(entry.gratitude_1 || entry.gratitude_2 || entry.gratitude_3) && (
-                    <div className="bg-yellow-50 rounded-lg p-3">
-                      <p className="text-xs font-semibold text-yellow-700 mb-2 flex items-center">
-                        <Star size={14} className="mr-1" /> Dankbaarheid
-                      </p>
-                      {entry.gratitude_1 && <p className="text-sm text-gray-800 mb-1">• {entry.gratitude_1}</p>}
-                      {entry.gratitude_2 && <p className="text-sm text-gray-800 mb-1">• {entry.gratitude_2}</p>}
-                      {entry.gratitude_3 && <p className="text-sm text-gray-800">• {entry.gratitude_3}</p>}
-                    </div>
-                  )}
-
-                  {/* Points earned */}
-                  {entry.points_earned > 0 && (
-                    <div className="bg-red-50 rounded-lg p-3 flex items-center justify-between">
-                      <p className="text-xs font-semibold text-red-700">Punten Verdiend</p>
-                      <div className="flex items-center space-x-1">
-                        <Trophy className="text-yellow-600" size={16} />
-                        <p className="text-lg font-bold text-red-600">+{entry.points_earned}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="mt-6 text-center text-gray-500 text-sm">
-        <p>Blijf dagelijks bijhouden om je groei te zien! 🌱</p>
+        <p style={{ marginTop: 32, textAlign: 'center', fontSize: 13, color: C.textMuted }}>
+          Blijf dagelijks bijhouden om je groei te zien
+        </p>
       </div>
     </div>
   );
