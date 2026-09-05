@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sun, Zap, Brain, Wind, Moon, BookOpen, CheckCircle, Circle, LogOut, Home, ArrowLeft, Trophy, Delete, Heart } from 'lucide-react';
+import { Sun, Zap, Brain, Wind, Moon, BookOpen, CheckCircle, Circle, LogOut, Home, ArrowLeft, Trophy, Delete, Heart, Lightbulb, RefreshCw } from 'lucide-react';
 import { PointsProvider, usePoints } from './PointsContext';
 import { useAuth } from './contexts/AuthContext';
 import Onboarding from './Onboarding';
@@ -410,6 +410,8 @@ const tools = [
   { id: 'guts',       icon: Heart,    label: 'Leermoment',           sub: 'Moedig geprobeerd, niet gelukt?', points: 50, color: '#f43f5e' },
   { id: 'thoughts',   icon: Brain,    label: 'Gedachten Dump',       sub: 'Schrijf je gedachten',     points: 15, color: '#8b5cf6' },
   { id: 'breathing',  icon: Wind,     label: 'Krachtoefening',       sub: 'Adem & focus',             points: 25, color: '#06b6d4' },
+  { id: 'reframe',    icon: RefreshCw, label: 'Helpende Gedachten',  sub: 'Draai een gedachte om',    points: 10, color: '#0ea5e9' },
+  { id: 'brain',      icon: Lightbulb, label: 'Mijn Ajax-Brein',     sub: 'Waarom voel ik dit?',      points: 0,  color: '#eab308' },
   { id: 'evening',    icon: Moon,     label: 'Avondritueel',         sub: 'Missies voor het slapen',  points: 20, color: '#6366f1' },
   { id: 'journal',    icon: BookOpen, label: 'Logboek',              sub: 'Jouw persoonlijk dagboek', points: 10, color: '#ec4899' },
 ];
@@ -490,7 +492,9 @@ const ToolboxScreen = ({ onSelectTool, onLogout, onEmotionChange }) => {
                 </div>
                 <p style={{ margin: '0 0 4px', fontWeight: 700, fontSize: 13, color: C.text, lineHeight: 1.3 }}>{tool.label}</p>
                 <p style={{ margin: '0 0 10px', fontSize: 11, color: C.textMuted, lineHeight: 1.3 }}>{tool.sub}</p>
-                <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: C.red }}>+{tool.points}p</p>
+                {tool.points > 0
+                  ? <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: C.red }}>+{tool.points}p</p>
+                  : <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: tool.color }}>Ontdek →</p>}
               </button>
             );
           })}
@@ -677,7 +681,7 @@ const ThoughtsScreen = ({ onBack, onSave, savedThought, user, crisisMode }) => {
   );
 };
 
-const BreathingScreen = ({ onBack, crisisMode }) => {
+const BreathingScreen = ({ onBack, crisisMode, onLearnMore }) => {
   const { addPoints, trackActivity } = usePoints();
   const [breathingState, setBreathingState] = useState('Klaar?');
   const [isActive, setIsActive] = useState(!!crisisMode);
@@ -756,8 +760,134 @@ const BreathingScreen = ({ onBack, crisisMode }) => {
         >
           {isActive ? 'Stop' : 'Start'}
         </button>
+
+        {!crisisMode && onLearnMore && (
+          <button
+            onClick={onLearnMore}
+            style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: 12, fontWeight: 600, cursor: 'pointer', marginTop: 20, padding: 8 }}
+          >
+            Waarom helpt dit? 🧠
+          </button>
+        )}
       </div>
       <style>{`@keyframes breathePulse { 0%,100%{transform:scale(1);opacity:.3} 50%{transform:scale(1.2);opacity:.6} }`}</style>
+    </div>
+  );
+};
+
+const THOUGHT_PAIRS = [
+  { stuck: "Ik kan dit niet, het is verpest.", helpful: "Ik kan dit nú nog niet, maar mijn hersenen zijn aan het trainen." },
+  { stuck: "Ik heb een fout gemaakt, ik ben dom.", helpful: "Fouten maken hoort bij leren. Mijn brein groeit juist van fouten." },
+  { stuck: "Iedereen kijkt naar mij, ik faal.", helpful: "De meeste mensen zijn met zichzelf bezig. Morgen weet niemand dit meer." },
+  { stuck: "Het moet perfect zijn, anders telt het niet.", helpful: "Goed genoeg is vaak al heel goed. Ik mag oefenen." },
+  { stuck: "Ik ben boos, dit is erg.", helpful: "Mijn alarm staat aan, maar er is geen echt gevaar. Dit gaat voorbij." },
+];
+
+const HelpfulThoughtsScreen = ({ onBack, onComplete, isCompleted }) => {
+  const { addPoints, trackActivity } = usePoints();
+  const [flipped, setFlipped] = useState({});
+  const claimedRef = React.useRef(isCompleted);
+
+  const handleFlip = (i) => {
+    setFlipped(prev => ({ ...prev, [i]: !prev[i] }));
+    if (!claimedRef.current) {
+      claimedRef.current = true;
+      addPoints(10, 'Helpende Gedachten');
+      trackActivity('toolbox_uses');
+      onComplete();
+    }
+  };
+
+  return (
+    <div style={{ ...styles.page, minHeight: '100vh' }}>
+      <ToolHeader title="Helpende Gedachten" onBack={onBack} />
+      <div style={styles.innerNarrow}>
+        <p style={{ margin: '0 0 20px', fontSize: 13, color: C.textSub }}>Tik op een gedachte om hem om te draaien.</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {THOUGHT_PAIRS.map((pair, i) => (
+            <button
+              key={i}
+              onClick={() => handleFlip(i)}
+              style={{
+                textAlign: 'left', padding: '16px 18px', borderRadius: 14, cursor: 'pointer',
+                border: `1.5px solid ${flipped[i] ? '#bbf7d0' : C.border}`,
+                background: flipped[i] ? '#f0fdf4' : C.white,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              }}
+            >
+              {!flipped[i] ? (
+                <>
+                  <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 }}>Vastzittende gedachte</p>
+                  <p style={{ margin: 0, fontSize: 14, color: C.text, fontStyle: 'italic' }}>"{pair.stuck}"</p>
+                </>
+              ) : (
+                <>
+                  <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, color: '#15803d', textTransform: 'uppercase', letterSpacing: 0.5 }}>Helpende gedachte</p>
+                  <p style={{ margin: 0, fontSize: 14, color: '#15803d', fontWeight: 600 }}>"{pair.helpful}"</p>
+                </>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const BRAIN_CARDS = [
+  { emoji: '🧠', title: 'Twee delen van je brein', text: 'Je hebt een deel dat heel snel reageert (het alarm-brein) en een deel dat rustig nadenkt (het denk-brein).' },
+  { emoji: '🚨', title: 'Vals alarm', text: 'Als je boos wordt of dichtklapt, geeft je alarm-brein (de amygdala) een signaal alsof er acuut gevaar is - ook al is dat niet zo.' },
+  { emoji: '🌬️', title: 'Adem geeft je de regie terug', text: 'Diep en langzaam ademhalen stuurt een signaal naar je lijf: "het is veilig". Daardoor kan je denk-brein het weer overnemen.' },
+  { emoji: '💪', title: 'Dit is een spier die je traint', text: 'Elke keer dat je merkt dat je alarm afgaat én iets doet om rustig te worden, train je die spier. Dat wordt makkelijker met oefenen.' },
+];
+
+const BrainScreen = ({ onBack }) => {
+  const [index, setIndex] = useState(0);
+  const card = BRAIN_CARDS[index];
+  const isFirst = index === 0;
+  const isLast = index === BRAIN_CARDS.length - 1;
+
+  return (
+    <div style={{ ...styles.page, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <ToolHeader title="Mijn Ajax-Brein" onBack={onBack} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, textAlign: 'center' }}>
+        <div style={{ fontSize: 64, marginBottom: 16 }}>{card.emoji}</div>
+        <Card style={{ maxWidth: 400 }}>
+          <p style={{ margin: '0 0 8px', fontWeight: 800, fontSize: 16, color: C.text }}>{card.title}</p>
+          <p style={{ margin: 0, fontSize: 14, color: C.textSub, lineHeight: 1.5 }}>{card.text}</p>
+        </Card>
+
+        <div style={{ display: 'flex', gap: 8, marginTop: 24 }}>
+          {BRAIN_CARDS.map((_, i) => (
+            <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: i === index ? C.red : C.borderMd }} />
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+          <button
+            onClick={() => setIndex(i => Math.max(0, i - 1))}
+            disabled={isFirst}
+            style={{
+              background: isFirst ? C.borderMd : C.white, color: isFirst ? C.textMuted : C.text,
+              border: `1.5px solid ${C.borderMd}`, borderRadius: 99, padding: '12px 24px',
+              fontSize: 14, fontWeight: 700, cursor: isFirst ? 'not-allowed' : 'pointer',
+            }}
+          >
+            Vorige
+          </button>
+          <button
+            onClick={() => setIndex(i => Math.min(BRAIN_CARDS.length - 1, i + 1))}
+            disabled={isLast}
+            style={{
+              background: isLast ? C.borderMd : C.red, color: isLast ? C.textMuted : '#fff',
+              border: 'none', borderRadius: 99, padding: '12px 24px',
+              fontSize: 14, fontWeight: 700, cursor: isLast ? 'not-allowed' : 'pointer',
+            }}
+          >
+            Volgende
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
@@ -952,6 +1082,12 @@ const WellnessAppContent = ({ onBack, onLogout, initialView = 'toolbox', user })
     setCurrentView(emotion === 'green' ? 'toolbox' : 'cooling');
   };
 
+  // Voor tools die je op hun eigen scherm blijft gebruiken na de eerste
+  // beloning (zoals meerdere Helpende Gedachten omdraaien) - geen auto-navigatie.
+  const markToolUsed = (tool, data) => {
+    setDailyData(prev => ({ ...prev, [today]: { ...(prev[today] || {}), [tool]: data } }));
+  };
+
   // Bij "Boos / Dicht" geen tussenscherm met uitleg - direct en zonder woorden
   // doorschakelen naar fysieke ontlading (ademhaling, meteen gestart).
   // Bij "Onrustig" wel de rustige keuze tussen ademhaling en Gedachten-Dump.
@@ -980,7 +1116,9 @@ const WellnessAppContent = ({ onBack, onLogout, initialView = 'toolbox', user })
     case 'challenge':  return <ChallengeScreen onBack={backFromTool} onComplete={() => handleToolCompletion('challenge', true)} isCompleted={!!todayData.challenge} user={user} />;
     case 'guts':       return <GutsScreen onBack={backFromTool} onComplete={() => handleToolCompletion('guts', true)} isCompleted={!!todayData.guts} />;
     case 'thoughts':   return <ThoughtsScreen onBack={backFromTool} onSave={d => handleToolCompletion('thoughts', d)} savedThought={todayData.thoughts} user={user} crisisMode={crisisMode} />;
-    case 'breathing':  return <BreathingScreen onBack={backFromTool} crisisMode={crisisMode} />;
+    case 'breathing':  return <BreathingScreen onBack={backFromTool} crisisMode={crisisMode} onLearnMore={() => setCurrentView('brain')} />;
+    case 'reframe':    return <HelpfulThoughtsScreen onBack={backFromTool} onComplete={() => markToolUsed('reframe', true)} isCompleted={!!todayData.reframe} />;
+    case 'brain':      return <BrainScreen onBack={backFromTool} />;
     case 'evening':    return <AjaxSleepApp onBack={backFromTool} onLogout={onLogout} user={user} />;
     default:
       return <ToolboxScreen onSelectTool={setCurrentView} onBack={onBack} onLogout={onLogout} onEmotionChange={handleEmotionChange} />;

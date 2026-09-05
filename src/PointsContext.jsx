@@ -58,28 +58,7 @@ export const PointsProvider = ({ children, userId = null }) => {
 
   // Load from database when user logs in
   useEffect(() => {
-    if (userId) {
-      setIsLoadingFromDb(true);
-      getUserPoints(userId).then(dbData => {
-        if (dbData) {
-          setTotalPoints(dbData.total_points || 0);
-          setWeeklyPoints(dbData.weekly_points || 0);
-          setCurrentStreak(dbData.current_streak || 0);
-          setUnlockedAchievements(dbData.unlocked_achievements || []);
-          setActivityCounts(dbData.activity_counts || {
-            early_bird: 0,
-            quotes_read: 0,
-            match_rituals: 0,
-            breathing_sessions: 0,
-            toolbox_uses: 0,
-            perfect_preps: 0,
-          });
-        }
-        setIsLoadingFromDb(false);
-        setHasLoadedInitialData(true);
-      });
-    } else {
-      // Fallback to localStorage if no user
+    const loadFromLocalStorage = () => {
       const saved = localStorage.getItem('ajaxPoints');
       if (saved) {
         const data = JSON.parse(saved);
@@ -96,6 +75,35 @@ export const PointsProvider = ({ children, userId = null }) => {
           perfect_preps: 0,
         });
       }
+    };
+
+    if (userId) {
+      setIsLoadingFromDb(true);
+      getUserPoints(userId).then(dbData => {
+        if (dbData) {
+          setTotalPoints(dbData.total_points || 0);
+          setWeeklyPoints(dbData.weekly_points || 0);
+          setCurrentStreak(dbData.current_streak || 0);
+          setUnlockedAchievements(dbData.unlocked_achievements || []);
+          setActivityCounts(dbData.activity_counts || {
+            early_bird: 0,
+            quotes_read: 0,
+            match_rituals: 0,
+            breathing_sessions: 0,
+            toolbox_uses: 0,
+            perfect_preps: 0,
+          });
+        } else {
+          // Geen (werkende) database - val terug op localStorage zodat
+          // voortgang niet verloren gaat bij elke herlaad (mock Supabase-client
+          // geeft altijd null terug).
+          loadFromLocalStorage();
+        }
+        setIsLoadingFromDb(false);
+        setHasLoadedInitialData(true);
+      });
+    } else {
+      loadFromLocalStorage();
       setIsLoadingFromDb(false);
       setHasLoadedInitialData(true);
     }
