@@ -88,13 +88,16 @@ const PointsDashboard = ({ onBack }) => {
             { icon: Trophy, label: 'Totaal', value: totalPoints, color: '#f59e0b' },
             { icon: TrendingUp, label: 'Deze Week', value: weeklyPoints, color: '#3b82f6' },
             { icon: Zap, label: 'Streak', value: currentStreak, color: C.red },
-          ].map(({ icon: Icon, label, value, color }) => (
-            <Card key={label} style={{ padding: 16, textAlign: 'center' }}>
-              <Icon size={20} color={color} style={{ margin: '0 auto 8px' }} />
-              <p style={{ margin: '0 0 2px', fontSize: 22, fontWeight: 800, color: C.text }}>{value}</p>
-              <p style={{ margin: 0, fontSize: 11, color: C.textMuted }}>{label}</p>
-            </Card>
-          ))}
+          ].map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <Card key={stat.label} style={{ padding: 16, textAlign: 'center' }}>
+                <Icon size={20} color={stat.color} style={{ margin: '0 auto 8px' }} />
+                <p style={{ margin: '0 0 2px', fontSize: 22, fontWeight: 800, color: C.text }}>{stat.value}</p>
+                <p style={{ margin: 0, fontSize: 11, color: C.textMuted }}>{stat.label}</p>
+              </Card>
+            );
+          })}
         </div>
 
         {/* All Levels */}

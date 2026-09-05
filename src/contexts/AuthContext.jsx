@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- context + hook are kept together on purpose */
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { announceSuccess, announceError } from '../utils/announcer';
 
@@ -79,7 +80,7 @@ export const AuthProvider = ({ children }) => {
     return { data: null, error: new Error('Gebruik alleen pincode login') };
   };
 
-  const signUp = async (email, password) => {
+  const signUp = async () => {
     // Registration disabled
     return { data: null, error: new Error('Registratie is uitgeschakeld') };
   };

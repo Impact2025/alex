@@ -160,7 +160,7 @@ const styles = {
 
 // ─── Sleep App ────────────────────────────────────────────────────────────────
 
-const AjaxSleepAppContent = ({ onBack, onLogout, user }) => {
+const AjaxSleepAppContent = ({ onLogout, user }) => {
   const points = usePoints();
   const [currentView, setCurrentView] = useState('home');
   const [dailyGoals, setDailyGoals] = useState(0);
@@ -243,7 +243,6 @@ const AjaxSleepAppContent = ({ onBack, onLogout, user }) => {
 
   // ── Home Screen ──
   const HomeScreen = () => {
-    const progress = Math.min((dailyGoals / 9.5) * 100, 100);
     return (
       <div style={styles.page}>
         <PageHeader title="Avondritueel" onLogout={onLogout} />
@@ -736,6 +735,9 @@ const BreathingScreen = ({ onBack, crisisMode, onLearnMore }) => {
       if (i === 0) setCycles(prev => prev + 1);
     }, 4000);
     return () => clearInterval(interval);
+    // addPoints/trackActivity zijn niet gememoized in PointsContext - ze in de
+    // deps opnemen zou de ademhalingscyclus laten resetten bij elke re-render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive, cycles, sessionComplete]);
 
   return (

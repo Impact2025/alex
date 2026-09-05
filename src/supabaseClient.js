@@ -9,11 +9,11 @@ const createMockClient = () => {
       signInWithPassword: async () => ({ data: null, error: new Error('Use pincode auth instead') }),
       signUp: async () => ({ data: null, error: new Error('Registration disabled') }),
       signOut: async () => ({ error: null }),
-      onAuthStateChange: (callback) => {
+      onAuthStateChange: () => {
         return { data: { subscription: { unsubscribe: () => {} } } };
       }
     },
-    from: (table) => ({
+    from: () => ({
       select: () => ({
         eq: () => ({
           order: () => ({
@@ -49,7 +49,7 @@ export const auth = {
   getSession: async () => null,
   getUser: getCurrentUser,
   isAuthenticated,
-  onAuthStateChange: (callback) => ({ data: { subscription: { unsubscribe: () => {} } } })
+  onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
 };
 
 console.log('Mock Supabase client initialized (local storage only)');

@@ -1,4 +1,4 @@
-import { expect, afterEach, vi } from 'vitest'
+import { afterEach, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 
@@ -33,14 +33,9 @@ global.IntersectionObserver = class IntersectionObserver {
   unobserve() {}
 }
 
-// Mock localStorage
-const localStorageMock = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
-}
-global.localStorage = localStorageMock
+// jsdom levert al een volwaardige, werkende localStorage-implementatie -
+// die niet overschrijven met een kale vi.fn()-mock die niets opslaat
+// (dat brak o.a. rateLimiter.test.js, dat op echte persistentie leunt).
 
 // Mock scrollIntoView
 Element.prototype.scrollIntoView = vi.fn()

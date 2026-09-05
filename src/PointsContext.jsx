@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- context + hook are kept together on purpose */
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getUserPoints, savePointsDebounced } from './pointsService';
 

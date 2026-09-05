@@ -16,7 +16,7 @@ async function testConnection() {
   // Test 1: Check connection
   console.log('1️⃣ Testing API connection...')
   try {
-    const { data, error } = await supabase.from('user_points').select('count')
+    const { error } = await supabase.from('user_points').select('count')
     if (error) {
       console.log('❌ Table "user_points" not found or not accessible')
       console.log('   Error:', error.message)
@@ -50,7 +50,7 @@ async function testConnection() {
 
   for (const table of tables) {
     try {
-      const { data, error } = await supabase.from(table).select('count').limit(1)
+      const { error } = await supabase.from(table).select('count').limit(1)
       if (error) {
         console.log(`   ❌ ${table} - NOT FOUND`)
       } else {

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import {
   sanitizeTextInput,
   validateEmail,
@@ -92,7 +92,7 @@ describe('validation utils', () => {
     })
 
     it('should calculate strength correctly', () => {
-      const medium = validatePassword('password123')
+      const medium = validatePassword('abcXYZ12')
       expect(medium.strength).toBe('medium')
 
       const strong = validatePassword('P@ssw0rd123!')
@@ -102,9 +102,9 @@ describe('validation utils', () => {
 
   describe('validatePincode', () => {
     it('should accept valid 4-digit pincodes', () => {
-      const result = validatePincode('1234')
+      const result = validatePincode('2679')
       expect(result.isValid).toBe(true)
-      expect(result.sanitized).toBe('1234')
+      expect(result.sanitized).toBe('2679')
     })
 
     it('should reject non-numeric pincodes', () => {

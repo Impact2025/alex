@@ -49,7 +49,7 @@ async function confirmUser() {
     console.log('✅ Found user:', user.id)
 
     // Update user to confirmed
-    const { data, error } = await supabase.auth.admin.updateUserById(
+    const { error } = await supabase.auth.admin.updateUserById(
       user.id,
       { email_confirm: true }
     )

@@ -13,15 +13,16 @@ const Journal = ({ onBack, user }) => {
   const [loading, setLoading] = useState(true);
   const [expandedEntry, setExpandedEntry] = useState(null);
 
-  useEffect(() => { loadEntries(); }, [user]);
-
-  const loadEntries = async () => {
-    if (!user) { setLoading(false); return; }
-    setLoading(true);
-    const data = await dailyEntryService.getAllEntries(user.id, 30);
-    setEntries(data);
-    setLoading(false);
-  };
+  useEffect(() => {
+    const loadEntries = async () => {
+      if (!user) { setLoading(false); return; }
+      setLoading(true);
+      const data = await dailyEntryService.getAllEntries(user.id, 30);
+      setEntries(data);
+      setLoading(false);
+    };
+    loadEntries();
+  }, [user]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);

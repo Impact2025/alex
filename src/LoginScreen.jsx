@@ -11,26 +11,6 @@ const LoginScreen = () => {
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
 
-  const handleSubmit = async () => {
-    if (pincode.length !== 4) return;
-
-    setLoading(true);
-    setError('');
-
-    try {
-      const { data, error } = await signInWithPincode(pincode);
-      if (error) throw error;
-      if (data?.user) navigate('/');
-    } catch (error) {
-      setError('Onjuiste pincode');
-      setPincode('');
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handlePinPress = (num) => {
     if (pincode.length < 4) {
       const next = pincode + num;
@@ -49,7 +29,7 @@ const LoginScreen = () => {
       const { data, error } = await signInWithPincode(pin);
       if (error) throw error;
       if (data?.user) navigate('/');
-    } catch (error) {
+    } catch {
       setError('Onjuiste pincode');
       setPincode('');
       setShake(true);
