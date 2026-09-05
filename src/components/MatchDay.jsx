@@ -168,7 +168,7 @@ const MatchDay = ({ onBack }) => {
         <div className="text-center mb-6">
           <div className="text-6xl mb-3">⚽🔥</div>
           <h1 className="text-4xl font-bold mb-2">WEDSTRIJDDAG!</h1>
-          <p className="text-xl text-red-200">Alle punten tellen DUBBEL vandaag! 2️⃣✖️</p>
+          <p className="text-xl text-red-200">Alle punten tellen DUBBEL vandaag — óók als je herstelt na een foute pass of balverlies! 2️⃣✖️</p>
         </div>
 
         {/* Pre-Match Rituals */}
@@ -292,6 +292,17 @@ const MatchDay = ({ onBack }) => {
               </div>
 
               <div>
+                <label className="block font-semibold mb-2">Wat deed je knap nadat iets niet lukte (bijv. na balverlies of een foute pass)?</label>
+                <textarea
+                  name="resilience"
+                  required
+                  rows="3"
+                  className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-red-600 focus:outline-none"
+                  placeholder="Bijvoorbeeld: Ik bleef rustig, ik ging gewoon door, ik hielp mezelf overeind..."
+                ></textarea>
+              </div>
+
+              <div>
                 <label className="block font-semibold mb-2">Wat kan beter?</label>
                 <textarea
                   name="improve"
@@ -342,7 +353,7 @@ const MatchDay = ({ onBack }) => {
         <div className="mt-6 bg-yellow-100 text-yellow-900 rounded-2xl p-4 text-center">
           <p className="font-bold text-lg">💡 Wedstrijddag Tip</p>
           <p className="text-sm mt-1">
-            Gebruik ook de Wellness Toolbox voor extra punten! Meditatie en visualisatie geven DUBBELE punten op zaterdag! 🔥
+            De dubbele punten zijn niet alleen voor doelpunten en perfecte acties - lef tonen na een fout of balverlies telt net zo hard. Gebruik ook het Leermoment in de Wellness Toolbox! 🔥
           </p>
         </div>
       </div>

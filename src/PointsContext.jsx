@@ -155,6 +155,19 @@ export const PointsProvider = ({ children, userId = null }) => {
     console.log(`+${points} punten! ${reason}`);
   };
 
+  // Dagelijkse aanwezigheidsbonus: voorkomt dat een net ingelogd kind een kale
+  // "0 punten" te zien krijgt, wat voor faalangst kan aanvoelen als een achterstand.
+  useEffect(() => {
+    if (!hasLoadedInitialData) return;
+    const today = new Date().toISOString().split('T')[0];
+    const key = `groeipad_presence_${userId || 'guest'}_${today}`;
+    if (!localStorage.getItem(key)) {
+      localStorage.setItem(key, '1');
+      addPoints(5, 'Aanwezigheidsbonus');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasLoadedInitialData]);
+
   // Track activity
   const trackActivity = (activityType) => {
     setActivityCounts(prev => {

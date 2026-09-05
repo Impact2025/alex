@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sun, Zap, Brain, Wind, Moon, BookOpen, CheckCircle, Circle, LogOut, Home, ArrowLeft, Trophy, Delete } from 'lucide-react';
+import { Sun, Zap, Brain, Wind, Moon, BookOpen, CheckCircle, Circle, LogOut, Home, ArrowLeft, Trophy, Delete, Heart } from 'lucide-react';
 import { PointsProvider, usePoints } from './PointsContext';
 import { useAuth } from './contexts/AuthContext';
 import Onboarding from './Onboarding';
@@ -407,6 +407,7 @@ const AjaxSleepApp = (props) => (
 const tools = [
   { id: 'morning',    icon: Sun,      label: 'Morgen Kick-Off',      sub: 'Begin je dag sterk',       points: 30, color: '#f59e0b' },
   { id: 'challenge',  icon: Zap,      label: 'Missie van de Dag',    sub: 'Dagelijkse uitdaging',     points: 25, color: '#3b82f6' },
+  { id: 'guts',       icon: Heart,    label: 'Leermoment',           sub: 'Moedig geprobeerd, niet gelukt?', points: 50, color: '#f43f5e' },
   { id: 'thoughts',   icon: Brain,    label: 'Gedachten Dump',       sub: 'Schrijf je gedachten',     points: 15, color: '#8b5cf6' },
   { id: 'breathing',  icon: Wind,     label: 'Krachtoefening',       sub: 'Adem & focus',             points: 25, color: '#06b6d4' },
   { id: 'evening',    icon: Moon,     label: 'Avondritueel',         sub: 'Missies voor het slapen',  points: 20, color: '#6366f1' },
@@ -438,7 +439,11 @@ const ToolboxScreen = ({ onSelectTool, onLogout, onEmotionChange }) => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div>
               <p style={{ margin: '0 0 2px', fontSize: 12, color: C.textMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>{currentLevel.name}</p>
-              <p style={{ margin: 0, fontSize: 26, fontWeight: 900, color: C.text }}>{totalPoints} <span style={{ fontSize: 14, fontWeight: 400, color: C.textMuted }}>punten</span></p>
+              <p style={{ margin: 0, fontSize: 26, fontWeight: 900, color: C.text }}>
+                {totalPoints > 0
+                  ? <>{totalPoints} <span style={{ fontSize: 14, fontWeight: 400, color: C.textMuted }}>punten</span></>
+                  : 'Klaar voor de start'}
+              </p>
             </div>
             <span style={{ fontSize: 36 }}>{currentLevel.badge}</span>
           </div>
@@ -455,7 +460,7 @@ const ToolboxScreen = ({ onSelectTool, onLogout, onEmotionChange }) => {
             <div>
               <p style={{ margin: '0 0 2px', color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: 600 }}>VANDAAG</p>
               <p style={{ margin: 0, color: '#fff', fontWeight: 800, fontSize: 18 }}>Wedstrijddag ⚽</p>
-              <p style={{ margin: '2px 0 0', color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>Dubbele punten actief</p>
+              <p style={{ margin: '2px 0 0', color: 'rgba(255,255,255,0.7)', fontSize: 12 }}>Dubbele punten — ook voor herstel na een fout</p>
             </div>
             <span style={{ fontSize: 36 }}>🔥</span>
           </div>
@@ -605,9 +610,43 @@ const ChallengeScreen = ({ onBack, onComplete, isCompleted, user }) => {
   );
 };
 
-const ThoughtsScreen = ({ onBack, onSave, savedThought, user }) => {
+const GutsScreen = ({ onBack, onComplete, isCompleted }) => {
   const { addPoints, trackActivity } = usePoints();
-  const [text, setText] = useState(savedThought || '');
+  const [note, setNote] = useState('');
+  const isMatchDay = new Date().getDay() === 6;
+  const pts = isMatchDay ? 100 : 50;
+
+  const handleClaim = () => {
+    if (!isCompleted) {
+      addPoints(pts, `Leermoment${isMatchDay ? ' (2x!)' : ''}`);
+      trackActivity('toolbox_uses');
+      onComplete();
+    }
+  };
+
+  return (
+    <div style={{ ...styles.page, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <ToolHeader title="Leermoment" onBack={onBack} />
+      <div style={{ ...styles.innerNarrow, flex: 1 }}>
+        <div style={{ background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: 12, padding: '10px 16px', marginBottom: 20 }}>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#be123c' }}>+{pts} punten{isMatchDay ? ' 🔥 2x!' : ''} — voor het proberen, niet voor het lukken</p>
+        </div>
+        <Card style={{ marginBottom: 12 }}>
+          <p style={{ margin: '0 0 8px', fontWeight: 700, fontSize: 14, color: C.text }}>Heb je vandaag iets moeilijks geprobeerd dat niet lukte?</p>
+          <p style={{ margin: 0, fontSize: 13, color: C.textSub }}>Dat is precies hoe je hersenen trainen. Je hoeft niks te winnen om dit te claimen.</p>
+        </Card>
+        <Card>
+          <TextAreaInput label="Wat probeerde je? (optioneel)" placeholder="Bijvoorbeeld: ik vroeg iets, ook al wist ik het niet zeker..." value={note} onChange={e => setNote(e.target.value)} />
+        </Card>
+      </div>
+      <PrimaryButton onClick={handleClaim} disabled={isCompleted}>{isCompleted ? '✓ Geclaimd!' : 'Ik heb het geprobeerd'}</PrimaryButton>
+    </div>
+  );
+};
+
+const ThoughtsScreen = ({ onBack, onSave, savedThought, user, crisisMode }) => {
+  const { addPoints, trackActivity } = usePoints();
+  const [text, setText] = useState(crisisMode ? '' : (savedThought || ''));
   const isMatchDay = new Date().getDay() === 6;
   const pts = isMatchDay ? 30 : 15;
 
@@ -624,9 +663,11 @@ const ThoughtsScreen = ({ onBack, onSave, savedThought, user }) => {
     <div style={{ ...styles.page, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <ToolHeader title="Gedachten Dump" onBack={onBack} />
       <div style={{ ...styles.innerNarrow, flex: 1 }}>
-        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 16px', marginBottom: 20 }}>
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#15803d' }}>+{pts} punten{isMatchDay ? ' 🔥 2x!' : ' ⭐'}</p>
-        </div>
+        {!crisisMode && (
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 16px', marginBottom: 20 }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#15803d' }}>+{pts} punten{isMatchDay ? ' 🔥 2x!' : ' ⭐'}</p>
+          </div>
+        )}
         <Card>
           <TextAreaInput label="Waar denk je aan?" placeholder="Schrijf alles op wat in je opkomt..." value={text} onChange={e => setText(e.target.value)} />
         </Card>
@@ -636,10 +677,10 @@ const ThoughtsScreen = ({ onBack, onSave, savedThought, user }) => {
   );
 };
 
-const BreathingScreen = ({ onBack }) => {
+const BreathingScreen = ({ onBack, crisisMode }) => {
   const { addPoints, trackActivity } = usePoints();
   const [breathingState, setBreathingState] = useState('Klaar?');
-  const [isActive, setIsActive] = useState(false);
+  const [isActive, setIsActive] = useState(!!crisisMode);
   const [sessionComplete, setSessionComplete] = useState(false);
   const [cycles, setCycles] = useState(0);
   const isMatchDay = new Date().getDay() === 6;
@@ -671,9 +712,11 @@ const BreathingScreen = ({ onBack }) => {
     <div style={{ ...styles.page, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <ToolHeader title="Krachtoefening" onBack={onBack} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, textAlign: 'center' }}>
-        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 20px', marginBottom: 32 }}>
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#15803d' }}>+{pts} punten na 5 cycli{isMatchDay ? ' 🔥 2x!' : ''}</p>
-        </div>
+        {!crisisMode && (
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: '10px 20px', marginBottom: 32 }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#15803d' }}>+{pts} punten na 5 cycli{isMatchDay ? ' 🔥 2x!' : ''}</p>
+          </div>
+        )}
 
         {/* Cycle counter */}
         <div style={{ marginBottom: 32 }}>
@@ -909,9 +952,13 @@ const WellnessAppContent = ({ onBack, onLogout, initialView = 'toolbox', user })
     setCurrentView(emotion === 'green' ? 'toolbox' : 'cooling');
   };
 
+  // Bij "Boos / Dicht" geen tussenscherm met uitleg - direct en zonder woorden
+  // doorschakelen naar fysieke ontlading (ademhaling, meteen gestart).
+  // Bij "Onrustig" wel de rustige keuze tussen ademhaling en Gedachten-Dump.
   const handleEmotionChange = (value) => {
     setEmotion(value);
-    if (value === 'orange' || value === 'red') setCurrentView('cooling');
+    if (value === 'red') setCurrentView('breathing');
+    else if (value === 'orange') setCurrentView('cooling');
   };
 
   const handleCalm = () => {
@@ -919,7 +966,8 @@ const WellnessAppContent = ({ onBack, onLogout, initialView = 'toolbox', user })
     setCurrentView('toolbox');
   };
 
-  const backFromTool = () => setCurrentView(emotion === 'green' ? 'toolbox' : 'cooling');
+  const crisisMode = emotion !== 'green';
+  const backFromTool = () => setCurrentView(crisisMode ? 'cooling' : 'toolbox');
 
   const todayData = dailyData[today] || {};
 
@@ -930,8 +978,9 @@ const WellnessAppContent = ({ onBack, onLogout, initialView = 'toolbox', user })
     case 'cooling':    return <CoolingDownScreen onBreathing={() => setCurrentView('breathing')} onThoughts={() => setCurrentView('thoughts')} onCalm={handleCalm} />;
     case 'morning':    return <MorningCheckinScreen onBack={backFromTool} onComplete={d => handleToolCompletion('morning', d)} user={user} />;
     case 'challenge':  return <ChallengeScreen onBack={backFromTool} onComplete={() => handleToolCompletion('challenge', true)} isCompleted={!!todayData.challenge} user={user} />;
-    case 'thoughts':   return <ThoughtsScreen onBack={backFromTool} onSave={d => handleToolCompletion('thoughts', d)} savedThought={todayData.thoughts} user={user} />;
-    case 'breathing':  return <BreathingScreen onBack={backFromTool} />;
+    case 'guts':       return <GutsScreen onBack={backFromTool} onComplete={() => handleToolCompletion('guts', true)} isCompleted={!!todayData.guts} />;
+    case 'thoughts':   return <ThoughtsScreen onBack={backFromTool} onSave={d => handleToolCompletion('thoughts', d)} savedThought={todayData.thoughts} user={user} crisisMode={crisisMode} />;
+    case 'breathing':  return <BreathingScreen onBack={backFromTool} crisisMode={crisisMode} />;
     case 'evening':    return <AjaxSleepApp onBack={backFromTool} onLogout={onLogout} user={user} />;
     default:
       return <ToolboxScreen onSelectTool={setCurrentView} onBack={onBack} onLogout={onLogout} onEmotionChange={handleEmotionChange} />;
