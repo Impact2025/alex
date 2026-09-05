@@ -66,7 +66,7 @@ const Journal = ({ onBack, user }) => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {entries.map((entry) => {
             const isExpanded = expandedEntry === entry.id;
-            const hasContent = entry.morning_goal || entry.thoughts || entry.dribbel_dare || entry.gratitude_1;
+            const hasContent = entry.morning_goal || entry.thoughts || entry.dribbel_dare || entry.gratitude_1 || entry.self_compassion;
 
             return (
               <div key={entry.id} style={{ background: C.white, borderRadius: 16, border: `1.5px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
@@ -94,7 +94,7 @@ const Journal = ({ onBack, user }) => {
 
                 {/* Expanded */}
                 {isExpanded && (
-                  <div style={{ padding: '0 20px 20px', borderTop: `1px solid ${C.border}', paddingTop: 16` }}>
+                  <div style={{ padding: '0 20px 20px', borderTop: `1px solid ${C.border}` }}>
                     <div style={{ paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
                       {entry.morning_goal && (
                         <div style={{ background: '#eff6ff', borderRadius: 12, padding: '10px 14px' }}>
@@ -133,6 +133,13 @@ const Journal = ({ onBack, user }) => {
                           {[entry.gratitude_1, entry.gratitude_2, entry.gratitude_3].filter(Boolean).map((g, i) => (
                             <p key={i} style={{ margin: i === 0 ? 0 : '4px 0 0', fontSize: 13, color: C.text }}>• {g}</p>
                           ))}
+                        </div>
+                      )}
+
+                      {entry.self_compassion && (
+                        <div style={{ background: '#fdf2f8', borderRadius: 12, padding: '10px 14px' }}>
+                          <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, color: '#be185d' }}>💗 Aardig voor mezelf</p>
+                          <p style={{ margin: 0, fontSize: 13, color: C.text }}>{entry.self_compassion}</p>
                         </div>
                       )}
 

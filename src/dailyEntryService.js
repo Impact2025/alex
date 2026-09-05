@@ -1,270 +1,107 @@
-import { supabase } from './supabaseClient';
+// Dagelijkse entries worden lokaal opgeslagen (localStorage). De Supabase-client
+// is een mock die niets persisteert, dus schrijven/lezen gebeurt hier rechtstreeks
+// in localStorage zodat het Logboek daadwerkelijk iets te tonen heeft.
+const STORAGE_KEY = 'groeipad_daily_entries';
 
-// Helper to get today's date in YYYY-MM-DD format
-const getTodayDate = () => {
-  return new Date().toISOString().split('T')[0];
+const getTodayDate = () => new Date().toISOString().split('T')[0];
+
+const readStore = () => {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+  } catch {
+    return {};
+  }
+};
+
+const writeStore = (store) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+};
+
+const getLocalEntry = (userId, date) => {
+  const store = readStore();
+  return store[userId]?.[date] || null;
+};
+
+const upsertLocalEntry = (userId, date, fields) => {
+  const store = readStore();
+  if (!store[userId]) store[userId] = {};
+  const existing = store[userId][date] || { id: date, user_id: userId, entry_date: date, completed_missions: [] };
+  store[userId][date] = { ...existing, ...fields };
+  writeStore(store);
+  return store[userId][date];
 };
 
 // Get or create today's entry
 export const getTodayEntry = async (userId) => {
   const today = getTodayDate();
-
-  try {
-    let { data, error } = await supabase
-      .from('daily_entries')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('entry_date', today)
-      .single();
-
-    if (error && error.code === 'PGRST116') {
-      // No entry exists, create one
-      const { data: newEntry, error: insertError } = await supabase
-        .from('daily_entries')
-        .insert([{
-          user_id: userId,
-          entry_date: today,
-          completed_missions: []
-        }])
-        .select()
-        .single();
-
-      if (insertError) throw insertError;
-      return newEntry;
-    }
-
-    if (error) throw error;
-    return data;
-  } catch (err) {
-    console.error('Error getting today entry:', err);
-    return null;
-  }
+  return getLocalEntry(userId, today) || upsertLocalEntry(userId, today, {});
 };
 
 // Save morning check-in data
 export const saveMorningCheckin = async (userId, data) => {
   const today = getTodayDate();
-
-  try {
-    const { data: result, error } = await supabase
-      .from('daily_entries')
-      .upsert({
-        user_id: userId,
-        entry_date: today,
-        morning_sleep: data.sleep,
-        morning_goal: data.goal,
-        morning_physical: data.physical,
-        morning_mental: data.mental,
-        morning_concentration: data.concentration,
-        morning_control: data.control
-      }, {
-        onConflict: 'user_id,entry_date'
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return result;
-  } catch (err) {
-    console.error('Error saving morning checkin:', err);
-    return null;
-  }
+  return upsertLocalEntry(userId, today, {
+    morning_sleep: data.sleep,
+    morning_goal: data.goal,
+    morning_physical: data.physical,
+    morning_mental: data.mental,
+    morning_concentration: data.concentration,
+    morning_control: data.control,
+  });
 };
 
 // Save thoughts
 export const saveThoughts = async (userId, thoughts) => {
   const today = getTodayDate();
-
-  try {
-    const { data, error } = await supabase
-      .from('daily_entries')
-      .upsert({
-        user_id: userId,
-        entry_date: today,
-        thoughts: thoughts
-      }, {
-        onConflict: 'user_id,entry_date'
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  } catch (err) {
-    console.error('Error saving thoughts:', err);
-    return null;
-  }
+  return upsertLocalEntry(userId, today, { thoughts });
 };
 
 // Mark challenge as completed
 export const saveChallenge = async (userId) => {
   const today = getTodayDate();
-
-  try {
-    const { data, error } = await supabase
-      .from('daily_entries')
-      .upsert({
-        user_id: userId,
-        entry_date: today,
-        challenge_completed: true
-      }, {
-        onConflict: 'user_id,entry_date'
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  } catch (err) {
-    console.error('Error saving challenge:', err);
-    return null;
-  }
+  return upsertLocalEntry(userId, today, { challenge_completed: true });
 };
 
 // Save completed mission
 export const saveCompletedMission = async (userId, missionId) => {
   const today = getTodayDate();
-
-  try {
-    // First get current entry
-    const entry = await getTodayEntry(userId);
-    const currentMissions = entry?.completed_missions || [];
-
-    // Add new mission if not already there
-    if (!currentMissions.includes(missionId)) {
-      currentMissions.push(missionId);
-    }
-
-    const { data, error } = await supabase
-      .from('daily_entries')
-      .upsert({
-        user_id: userId,
-        entry_date: today,
-        completed_missions: currentMissions
-      }, {
-        onConflict: 'user_id,entry_date'
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  } catch (err) {
-    console.error('Error saving mission:', err);
-    return null;
-  }
+  const entry = getLocalEntry(userId, today);
+  const currentMissions = entry?.completed_missions || [];
+  if (!currentMissions.includes(missionId)) currentMissions.push(missionId);
+  return upsertLocalEntry(userId, today, { completed_missions: currentMissions });
 };
 
 // Save dribbel data
 export const saveDribbelData = async (userId, dare, tryText) => {
   const today = getTodayDate();
-
-  try {
-    const { data, error } = await supabase
-      .from('daily_entries')
-      .upsert({
-        user_id: userId,
-        entry_date: today,
-        dribbel_dare: dare,
-        dribbel_try: tryText
-      }, {
-        onConflict: 'user_id,entry_date'
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  } catch (err) {
-    console.error('Error saving dribbel:', err);
-    return null;
-  }
+  return upsertLocalEntry(userId, today, { dribbel_dare: dare, dribbel_try: tryText });
 };
 
-// Save gratitude data
-export const saveGratitudeData = async (userId, gratitude1, gratitude2, gratitude3) => {
+// Save gratitude data (+ optioneel zelfcompassie-antwoord)
+export const saveGratitudeData = async (userId, gratitude1, gratitude2, gratitude3, selfCompassion) => {
   const today = getTodayDate();
-
-  try {
-    const { data, error } = await supabase
-      .from('daily_entries')
-      .upsert({
-        user_id: userId,
-        entry_date: today,
-        gratitude_1: gratitude1,
-        gratitude_2: gratitude2,
-        gratitude_3: gratitude3
-      }, {
-        onConflict: 'user_id,entry_date'
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  } catch (err) {
-    console.error('Error saving gratitude:', err);
-    return null;
-  }
+  return upsertLocalEntry(userId, today, {
+    gratitude_1: gratitude1,
+    gratitude_2: gratitude2,
+    gratitude_3: gratitude3,
+    self_compassion: selfCompassion,
+  });
 };
 
 // Save total points earned today
 export const savePointsEarned = async (userId, pointsEarned) => {
   const today = getTodayDate();
-
-  try {
-    const { data, error } = await supabase
-      .from('daily_entries')
-      .upsert({
-        user_id: userId,
-        entry_date: today,
-        points_earned: pointsEarned
-      }, {
-        onConflict: 'user_id,entry_date'
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  } catch (err) {
-    console.error('Error saving points:', err);
-    return null;
-  }
+  return upsertLocalEntry(userId, today, { points_earned: pointsEarned });
 };
 
-// Get all entries for a user (for dagboek view)
+// Get all entries for a user (for dagboek view), nieuwste eerst
 export const getAllEntries = async (userId, limit = 30) => {
-  try {
-    const { data, error } = await supabase
-      .from('daily_entries')
-      .select('*')
-      .eq('user_id', userId)
-      .order('entry_date', { ascending: false })
-      .limit(limit);
-
-    if (error) throw error;
-    return data || [];
-  } catch (err) {
-    console.error('Error getting entries:', err);
-    return [];
-  }
+  const store = readStore();
+  const entries = Object.values(store[userId] || {});
+  return entries
+    .sort((a, b) => (a.entry_date < b.entry_date ? 1 : -1))
+    .slice(0, limit);
 };
 
 // Get specific entry by date
-export const getEntryByDate = async (userId, date) => {
-  try {
-    const { data, error } = await supabase
-      .from('daily_entries')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('entry_date', date)
-      .single();
-
-    if (error && error.code !== 'PGRST116') throw error;
-    return data;
-  } catch (err) {
-    console.error('Error getting entry by date:', err);
-    return null;
-  }
-};
+export const getEntryByDate = async (userId, date) => getLocalEntry(userId, date);

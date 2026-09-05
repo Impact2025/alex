@@ -21,6 +21,15 @@ const PointsDashboard = ({ onBack }) => {
   const { totalPoints, weeklyPoints, currentStreak, currentLevel, progressToNextLevel, unlockedAchievements, LEVELS, ACHIEVEMENTS } = usePoints();
   const nextLevel = LEVELS.find(l => l.id === currentLevel.id + 1);
 
+  // Zelfde tussendoelen-logica als op het Groeipad-dashboard: elk level in 4
+  // behapbare stappen, zodat het volgende doel altijd dichtbij voelt.
+  const checkpointCount = 4;
+  const levelSpan = currentLevel.maxPoints - currentLevel.minPoints;
+  const pointsInLevel = Math.max(0, totalPoints - currentLevel.minPoints);
+  const checkpointSize = levelSpan / checkpointCount;
+  const nextCheckpoint = Math.min(checkpointCount, Math.floor(pointsInLevel / checkpointSize) + 1);
+  const pointsToCheckpoint = Math.max(0, Math.round(currentLevel.minPoints + nextCheckpoint * checkpointSize - totalPoints));
+
   return (
     <div style={{ minHeight: '100vh', background: C.bg }}>
       {/* Header */}
@@ -51,11 +60,19 @@ const PointsDashboard = ({ onBack }) => {
                 <span style={{ fontSize: 13, color: C.textSub, fontWeight: 600 }}>Naar {nextLevel.name}</span>
                 <span style={{ fontSize: 13, color: C.textSub }}>{Math.round(progressToNextLevel)}%</span>
               </div>
-              <div style={{ background: C.borderMd, borderRadius: 99, height: 8, overflow: 'hidden' }}>
-                <div style={{ width: `${progressToNextLevel}%`, height: '100%', background: C.red, borderRadius: 99, transition: 'width 0.5s ease' }} />
+              <div style={{ position: 'relative' }}>
+                <div style={{ background: C.borderMd, borderRadius: 99, height: 8, overflow: 'hidden' }}>
+                  <div style={{ width: `${progressToNextLevel}%`, height: '100%', background: C.red, borderRadius: 99, transition: 'width 0.5s ease' }} />
+                </div>
+                {[1, 2, 3].map(i => (
+                  <div key={i} style={{
+                    position: 'absolute', top: -1, left: `${(i / checkpointCount) * 100}%`,
+                    width: 2, height: 10, background: C.white, transform: 'translateX(-1px)',
+                  }} />
+                ))}
               </div>
               <p style={{ margin: '8px 0 0', fontSize: 12, color: C.textMuted }}>
-                Nog {nextLevel.minPoints - totalPoints} punten nodig
+                Nog {nextLevel.minPoints - totalPoints} punten nodig · volgend tussendoel over {pointsToCheckpoint}p 🚩 ({nextCheckpoint}/{checkpointCount})
               </p>
             </>
           ) : (

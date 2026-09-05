@@ -19,26 +19,32 @@ const inputStyle = {
 };
 const labelStyle = { display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 };
 
-const GratitudeInputModal = ({ show, onClose, onSubmit, value1, onChange1, value2, onChange2, value3, onChange3 }) => {
+const GratitudeInputModal = ({ show, onClose, onSubmit, value1, onChange1, value2, onChange2, value3, onChange3, selfCompassion, onSelfCompassionChange }) => {
   const modalRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
+  // Alleen bij het openen/sluiten van de modal opzetten - niet bij elke
+  // render (anders krijgt de focus-trap een nieuwe onClose-referentie per
+  // toetsaanslag en springt de focus terug naar het eerste veld).
   useEffect(() => {
     if (!show) return;
     announceModal(true, 'Dankbaarheid');
-    const cleanupEscape = handleEscapeKey(onClose);
+    const cleanupEscape = handleEscapeKey(() => onCloseRef.current());
     const cleanupFocus = modalRef.current ? trapFocus(modalRef.current) : () => {};
     return () => { cleanupEscape(); cleanupFocus(); announceModal(false, 'Dankbaarheid'); };
-  }, [show, onClose]);
+  }, [show]);
 
   if (!show) return null;
 
-  const isDisabled = !value1.trim() || !value2.trim() || !value3.trim();
+  const isDisabled = !value1.trim() || !value2.trim() || !value3.trim() || !selfCompassion.trim();
 
   const handleSubmit = () => {
     const s1 = sanitizeTextInput(value1);
     const s2 = sanitizeTextInput(value2);
     const s3 = sanitizeTextInput(value3);
-    if (s1 && s2 && s3) onSubmit();
+    const s4 = sanitizeTextInput(selfCompassion);
+    if (s1 && s2 && s3 && s4) onSubmit();
   };
 
   const handleKeyDown = (e) => {
@@ -66,6 +72,16 @@ const GratitudeInputModal = ({ show, onClose, onSubmit, value1, onChange1, value
               />
             </div>
           ))}
+
+          <div>
+            <label htmlFor="self-compassion" style={labelStyle}>4. Wat was vandaag lastig, en hoe was je toch aardig voor jezelf?</label>
+            <textarea id="self-compassion" value={selfCompassion} onChange={onSelfCompassionChange}
+              placeholder="...ik was boos, maar ik gaf mezelf even de tijd om rustig te worden" rows={3}
+              style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} aria-required="true"
+              onFocus={e => e.target.style.borderColor = '#DC2626'}
+              onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+            />
+          </div>
         </div>
 
         <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>

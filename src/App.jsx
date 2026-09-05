@@ -176,6 +176,7 @@ const AjaxSleepAppContent = ({ onBack, onLogout, user }) => {
   const [gratitude1, setGratitude1] = useState('');
   const [gratitude2, setGratitude2] = useState('');
   const [gratitude3, setGratitude3] = useState('');
+  const [selfCompassion, setSelfCompassion] = useState('');
 
   const cruijffQuotes = [
     "Elk nadeel heb z'n voordeel",
@@ -233,10 +234,10 @@ const AjaxSleepAppContent = ({ onBack, onLogout, user }) => {
   };
 
   const handleGratitudeSubmit = async () => {
-    if (gratitude1.trim() && gratitude2.trim() && gratitude3.trim()) {
-      if (user) await dailyEntryService.saveGratitudeData(user.id, gratitude1, gratitude2, gratitude3);
+    if (gratitude1.trim() && gratitude2.trim() && gratitude3.trim() && selfCompassion.trim()) {
+      if (user) await dailyEntryService.saveGratitudeData(user.id, gratitude1, gratitude2, gratitude3, selfCompassion);
       completeMission(6);
-      setGratitude1(''); setGratitude2(''); setGratitude3(''); setShowGratitudeInput(false);
+      setGratitude1(''); setGratitude2(''); setGratitude3(''); setSelfCompassion(''); setShowGratitudeInput(false);
     }
   };
 
@@ -388,7 +389,8 @@ const AjaxSleepAppContent = ({ onBack, onLogout, user }) => {
       <GratitudeInputModal show={showGratitudeInput} onClose={() => setShowGratitudeInput(false)} onSubmit={handleGratitudeSubmit}
         value1={gratitude1} onChange1={e => setGratitude1(e.target.value)}
         value2={gratitude2} onChange2={e => setGratitude2(e.target.value)}
-        value3={gratitude3} onChange3={e => setGratitude3(e.target.value)} />
+        value3={gratitude3} onChange3={e => setGratitude3(e.target.value)}
+        selfCompassion={selfCompassion} onSelfCompassionChange={e => setSelfCompassion(e.target.value)} />
       <LevelUpModal show={points.showLevelUp} level={points.newLevel} onClose={() => points.setShowLevelUp(false)} />
       <AchievementModal show={points.showAchievement !== null} achievement={points.showAchievement} onClose={() => points.setShowAchievement(null)} />
       {renderContent()}
@@ -429,6 +431,16 @@ const ToolboxScreen = ({ onSelectTool, onLogout, onEmotionChange }) => {
   const isMatchDay = new Date().getDay() === 6;
   const [quote] = useState(() => footballQuotes[Math.floor(Math.random() * footballQuotes.length)]);
 
+  // Grote levels voelen ver weg voor een kind - verdeel elk level in 4 kleinere
+  // tussendoelen zodat er steeds een dichtbij haalbaar volgend doel is.
+  const isMaxLevel = currentLevel.maxPoints >= 99999;
+  const levelSpan = currentLevel.maxPoints - currentLevel.minPoints;
+  const pointsInLevel = Math.max(0, totalPoints - currentLevel.minPoints);
+  const checkpointCount = 4;
+  const checkpointSize = levelSpan / checkpointCount;
+  const nextCheckpoint = Math.min(checkpointCount, Math.floor(pointsInLevel / checkpointSize) + 1);
+  const pointsToCheckpoint = Math.max(0, Math.round(currentLevel.minPoints + nextCheckpoint * checkpointSize - totalPoints));
+
   return (
     <div style={styles.page}>
       <PageHeader title="Groeipad" onLogout={onLogout} />
@@ -449,8 +461,22 @@ const ToolboxScreen = ({ onSelectTool, onLogout, onEmotionChange }) => {
             </div>
             <span style={{ fontSize: 36 }}>{currentLevel.badge}</span>
           </div>
-          <ProgressBar value={totalPoints} max={currentLevel.nextLevelThreshold || 100} />
-          <p style={{ margin: '8px 0 0', fontSize: 11, color: C.textMuted, textAlign: 'right' }}>Tik voor details →</p>
+          <div style={{ position: 'relative' }}>
+            <ProgressBar value={pointsInLevel} max={levelSpan || 1} />
+            {!isMaxLevel && [1, 2, 3].map(i => (
+              <div key={i} style={{
+                position: 'absolute', top: -1, left: `${(i / checkpointCount) * 100}%`,
+                width: 2, height: 8, background: C.white, transform: 'translateX(-1px)',
+              }} />
+            ))}
+          </div>
+          {isMaxLevel ? (
+            <p style={{ margin: '8px 0 0', fontSize: 11, color: C.textMuted, textAlign: 'right' }}>Tik voor details →</p>
+          ) : (
+            <p style={{ margin: '8px 0 0', fontSize: 11, color: C.textMuted, textAlign: 'right' }}>
+              Nog {pointsToCheckpoint}p tot je volgende tussendoel 🚩 ({nextCheckpoint}/{checkpointCount})
+            </p>
+          )}
         </Card>
 
         {/* Match Day */}

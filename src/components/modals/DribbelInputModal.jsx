@@ -21,14 +21,19 @@ const textareaStyle = {
 
 const DribbelInputModal = ({ show, onClose, onSubmit, dareValue, onDareChange, tryValue, onTryChange }) => {
   const modalRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
+  // Alleen bij het openen/sluiten van de modal opzetten - niet bij elke
+  // render (anders krijgt de focus-trap een nieuwe onClose-referentie per
+  // toetsaanslag en springt de focus terug naar het eerste veld).
   useEffect(() => {
     if (!show) return;
     announceModal(true, 'Pyjama-Dribbel');
-    const cleanupEscape = handleEscapeKey(onClose);
+    const cleanupEscape = handleEscapeKey(() => onCloseRef.current());
     const cleanupFocus = modalRef.current ? trapFocus(modalRef.current) : () => {};
     return () => { cleanupEscape(); cleanupFocus(); announceModal(false, 'Pyjama-Dribbel'); };
-  }, [show, onClose]);
+  }, [show]);
 
   if (!show) return null;
 
