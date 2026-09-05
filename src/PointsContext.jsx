@@ -197,8 +197,11 @@ export const PointsProvider = ({ children, userId = null }) => {
   };
 
   // Update streak
+  // Een gemiste dag reset de streak niet meer naar 0 (dat triggerde vermijdingsgedrag
+  // en faalangst) - de streak blijft gewoon staan, alsof de gemiste dag een "rustdag" was.
   const updateStreak = (increment = true) => {
-    const newStreak = increment ? currentStreak + 1 : 0;
+    if (!increment) return;
+    const newStreak = currentStreak + 1;
     setCurrentStreak(newStreak);
 
     // Check streak achievements

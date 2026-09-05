@@ -8,6 +8,7 @@ import { RewardModal, DribbelInputModal, GratitudeInputModal } from './component
 import PointsDashboard from './components/PointsDashboard';
 import MatchDay from './components/MatchDay';
 import Journal from './components/Journal';
+import { EmotionThermometer } from './components/common';
 import * as dailyEntryService from './dailyEntryService';
 import * as notificationService from './notificationService';
 
@@ -420,7 +421,7 @@ const footballQuotes = [
   { player: "Cristiano Ronaldo",   quote: "Talent zonder hard werken is niets waard." },
 ];
 
-const ToolboxScreen = ({ onSelectTool, onLogout }) => {
+const ToolboxScreen = ({ onSelectTool, onLogout, onEmotionChange }) => {
   const { totalPoints, currentLevel } = usePoints();
   const isMatchDay = new Date().getDay() === 6;
   const [quote] = useState(() => footballQuotes[Math.floor(Math.random() * footballQuotes.length)]);
@@ -429,6 +430,8 @@ const ToolboxScreen = ({ onSelectTool, onLogout }) => {
     <div style={styles.page}>
       <PageHeader title="Groeipad" onLogout={onLogout} />
       <div style={styles.inner}>
+
+        <EmotionThermometer onSelect={onEmotionChange} />
 
         {/* Level Card */}
         <Card style={{ marginBottom: 20, cursor: 'pointer' }} onClick={() => onSelectTool('points')}>
@@ -839,17 +842,84 @@ const MatchRitualScreen = ({ onBack, onSave, savedData }) => {
   );
 };
 
+const CoolingDownScreen = ({ onBreathing, onThoughts, onCalm }) => (
+  <div style={{ ...styles.page, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <div style={{ ...styles.innerNarrow, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center' }}>
+      <div style={{ fontSize: 56, marginBottom: 16 }}>🌊</div>
+      <h1 style={{ fontSize: 22, fontWeight: 800, color: C.text, margin: '0 0 8px' }}>Even rustig aan</h1>
+      <p style={{ color: C.textSub, marginBottom: 32, fontSize: 14 }}>
+        Er zijn nu geen taken. Kies wat jou nu helpt — er is geen goed of fout.
+      </p>
+
+      <button
+        onClick={onBreathing}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left',
+          background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 16,
+          padding: '18px 20px', marginBottom: 12, cursor: 'pointer',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+        }}
+      >
+        <Wind size={28} color="#06b6d4" />
+        <div>
+          <p style={{ margin: 0, fontWeight: 700, fontSize: 14, color: C.text }}>Ademhalingsoefening</p>
+          <p style={{ margin: 0, fontSize: 12, color: C.textMuted }}>Rustig worden, stap voor stap</p>
+        </div>
+      </button>
+
+      <button
+        onClick={onThoughts}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left',
+          background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 16,
+          padding: '18px 20px', marginBottom: 32, cursor: 'pointer',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+        }}
+      >
+        <Brain size={28} color="#8b5cf6" />
+        <div>
+          <p style={{ margin: 0, fontWeight: 700, fontSize: 14, color: C.text }}>Gedachten-Dump</p>
+          <p style={{ margin: 0, fontSize: 12, color: C.textMuted }}>Typ eruit wat er in je hoofd zit</p>
+        </div>
+      </button>
+
+      <button
+        onClick={onCalm}
+        style={{
+          background: 'none', border: 'none', color: C.textSub,
+          fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: 8,
+        }}
+      >
+        Ik voel me weer rustig →
+      </button>
+    </div>
+  </div>
+);
+
 // ─── Wellness Main ────────────────────────────────────────────────────────────
 
 const WellnessAppContent = ({ onBack, onLogout, initialView = 'toolbox', user }) => {
   const [currentView, setCurrentView] = useState(initialView);
   const [dailyData, setDailyData] = useState({});
+  const [emotion, setEmotion] = useState('green');
   const today = new Date().toISOString().split('T')[0];
 
   const handleToolCompletion = (tool, data) => {
     setDailyData(prev => ({ ...prev, [today]: { ...(prev[today] || {}), [tool]: data } }));
+    setCurrentView(emotion === 'green' ? 'toolbox' : 'cooling');
+  };
+
+  const handleEmotionChange = (value) => {
+    setEmotion(value);
+    if (value === 'orange' || value === 'red') setCurrentView('cooling');
+  };
+
+  const handleCalm = () => {
+    setEmotion('green');
     setCurrentView('toolbox');
   };
+
+  const backFromTool = () => setCurrentView(emotion === 'green' ? 'toolbox' : 'cooling');
 
   const todayData = dailyData[today] || {};
 
@@ -857,13 +927,14 @@ const WellnessAppContent = ({ onBack, onLogout, initialView = 'toolbox', user })
     case 'points':     return <PointsDashboard onBack={() => setCurrentView('toolbox')} />;
     case 'match_day':  return <MatchDay onBack={() => setCurrentView('toolbox')} />;
     case 'journal':    return <Journal onBack={() => setCurrentView('toolbox')} user={user} />;
-    case 'morning':    return <MorningCheckinScreen onBack={() => setCurrentView('toolbox')} onComplete={d => handleToolCompletion('morning', d)} user={user} />;
-    case 'challenge':  return <ChallengeScreen onBack={() => setCurrentView('toolbox')} onComplete={() => handleToolCompletion('challenge', true)} isCompleted={!!todayData.challenge} user={user} />;
-    case 'thoughts':   return <ThoughtsScreen onBack={() => setCurrentView('toolbox')} onSave={d => handleToolCompletion('thoughts', d)} savedThought={todayData.thoughts} user={user} />;
-    case 'breathing':  return <BreathingScreen onBack={() => setCurrentView('toolbox')} />;
-    case 'evening':    return <AjaxSleepApp onBack={() => setCurrentView('toolbox')} onLogout={onLogout} user={user} />;
+    case 'cooling':    return <CoolingDownScreen onBreathing={() => setCurrentView('breathing')} onThoughts={() => setCurrentView('thoughts')} onCalm={handleCalm} />;
+    case 'morning':    return <MorningCheckinScreen onBack={backFromTool} onComplete={d => handleToolCompletion('morning', d)} user={user} />;
+    case 'challenge':  return <ChallengeScreen onBack={backFromTool} onComplete={() => handleToolCompletion('challenge', true)} isCompleted={!!todayData.challenge} user={user} />;
+    case 'thoughts':   return <ThoughtsScreen onBack={backFromTool} onSave={d => handleToolCompletion('thoughts', d)} savedThought={todayData.thoughts} user={user} />;
+    case 'breathing':  return <BreathingScreen onBack={backFromTool} />;
+    case 'evening':    return <AjaxSleepApp onBack={backFromTool} onLogout={onLogout} user={user} />;
     default:
-      return <ToolboxScreen onSelectTool={setCurrentView} onBack={onBack} onLogout={onLogout} />;
+      return <ToolboxScreen onSelectTool={setCurrentView} onBack={onBack} onLogout={onLogout} onEmotionChange={handleEmotionChange} />;
   }
 };
 
